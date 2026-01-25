@@ -14,13 +14,14 @@
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #eab308; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .payment-option input:checked + div { border-color: #eab308; background-color: rgba(234, 179, 8, 0.1); }
-        
-        /* Ajuste fino para descrições longas não quebrarem o layout mobile */
-        .line-clamp-custom {
+
+        /* CORREÇÃO DO BUG DE CELULAR: Limita a descrição a 3 linhas */
+        .desc-limit {
             display: -webkit-box;
             -webkit-line-clamp: 3;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            text-overflow: ellipsis;
         }
     </style>
 </head>
@@ -178,29 +179,33 @@
             produtosFiltrados.forEach(p => { if(!porCategoria[p.categoria]) porCategoria[p.categoria]=[]; porCategoria[p.categoria].push(p); });
             container.innerHTML = ''; nav.innerHTML = '';
             for(const [cat, itens] of Object.entries(porCategoria)) {
-                nav.innerHTML += `<li onclick="document.getElementById('cat-${cat}').scrollIntoView({behavior: 'smooth'})" class="whitespace-nowrap cursor-pointer hover:text-white mr-4">${cat}</li>`;
+                nav.innerHTML += `<li onclick="document.getElementById('cat-${cat}').scrollIntoView()" class="whitespace-nowrap cursor-pointer hover:text-white mr-4">${cat}</li>`;
                 const htmlItens = itens.map(p => {
                     const esgotado = p.disponivel === false;
                     return `
-                    <div class="flex gap-4 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800 mb-3 relative overflow-hidden">
+                    <div class="flex gap-4 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800 mb-3 relative overflow-hidden min-h-[120px]">
                         ${p.mostrar_promo ? '<div class="absolute top-0 right-0 bg-yellow-500 text-black text-[9px] font-black px-2 py-1 rounded-bl-lg">PROMO</div>' : ''}
-                        <img src="${p.imagem_url || 'https://via.placeholder.com/80'}" class="w-24 h-24 rounded-lg object-cover flex-shrink-0 ${esgotado ? 'grayscale opacity-50' : ''}">
+                        
+                        <div class="w-24 h-24 flex-shrink-0 self-center">
+                            <img src="${p.imagem_url || 'https://via.placeholder.com/80'}" class="w-full h-full rounded object-cover ${esgotado ? 'grayscale opacity-50' : ''}">
+                        </div>
+
                         <div class="flex-1 flex flex-col justify-between min-w-0">
                             <div>
                                 <h3 class="font-bold text-white text-sm truncate">${p.nome}</h3>
-                                <p class="text-[11px] text-gray-500 line-clamp-custom leading-tight mt-1">${p.descricao||''}</p>
+                                <p class="text-[11px] text-gray-500 desc-limit leading-tight mt-1">${p.descricao||''}</p>
                             </div>
                             <div class="flex justify-between items-center mt-2">
                                 <span class="text-yellow-500 font-bold text-sm">R$ ${parseFloat(p.preco).toFixed(2)}</span>
                                 ${esgotado 
                                     ? '<span class="text-[9px] bg-red-900/30 text-red-500 font-black px-2 py-1 rounded border border-red-900">ESGOTADO</span>' 
-                                    : `<button onclick="addToCart('${p.id}')" class="bg-zinc-800 hover:bg-zinc-700 w-9 h-9 rounded-full text-white flex items-center justify-center transition-colors"><i class="fa-solid fa-plus text-xs"></i></button>`
+                                    : `<button onclick="addToCart('${p.id}')" class="bg-zinc-800 w-9 h-9 rounded-full text-white flex items-center justify-center hover:bg-zinc-700 transition-colors"><i class="fa-solid fa-plus text-xs"></i></button>`
                                 }
                             </div>
                         </div>
                     </div>`;
                 }).join('');
-                container.innerHTML += `<div id="cat-${cat}" class="mb-6 pt-2"><h2 class="text-lg font-bold text-white mb-2 border-l-4 border-yellow-500 pl-2 tracking-tight">${cat}</h2>${htmlItens}</div>`;
+                container.innerHTML += `<div id="cat-${cat}" class="mb-6"><h2 class="text-lg font-bold text-white mb-2 border-l-4 border-yellow-500 pl-2 tracking-tight">${cat}</h2>${htmlItens}</div>`;
             }
         }
 
@@ -289,8 +294,8 @@
             deliveryType = t;
             document.getElementById('area-mesa').classList.toggle('hidden', t !== 'mesa');
             document.getElementById('area-delivery').classList.toggle('hidden', t !== 'delivery');
-            document.getElementById('btn-mesa').className = t==='mesa' ? "p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 text-sm" : "p-2 rounded border border-zinc-700 text-gray-400 text-sm";
-            document.getElementById('btn-delivery').className = t==='delivery' ? "p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 text-sm" : "p-2 rounded border border-zinc-700 text-gray-400 text-sm";
+            document.getElementById('btn-mesa').className = t==='mesa' ? "p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 font-medium text-sm" : "p-2 rounded border border-zinc-700 text-gray-400 text-sm";
+            document.getElementById('btn-delivery').className = t==='delivery' ? "p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 font-medium text-sm" : "p-2 rounded border border-zinc-700 text-gray-400 text-sm";
         }
         function carregarDadosLocais() {
             if(localStorage.getItem('rest_nome')) document.getElementById('input-nome').value = localStorage.getItem('rest_nome');
