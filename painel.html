@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #18181b; color: #f4f4f5; }
         .tab-content { display: none; }
@@ -23,6 +24,12 @@
         input[type="date"]::-webkit-calendar-picker-indicator {
             filter: invert(1);
             cursor: pointer;
+        }
+
+        /* Estilo para o item sendo arrastado */
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #27272a !important;
         }
     </style>
 </head>
@@ -103,13 +110,12 @@
                         <tr>
                             <th class="p-4">Hora</th>
                             <th class="p-4">Cliente / Mesa</th>
-                            <th class="p-4">Itens</th>
-                            <th class="p-4">Pagamento</th>
-                            <th class="p-4">Valor Total</th>
+                            <th class="p-4">Itens do Pedido</th>
+                            <th class="p-4">Pagamento</th> <th class="p-4">Total</th>
                         </tr>
                     </thead>
                     <tbody id="lista-historico" class="divide-y divide-zinc-800/50">
-                        <tr><td colspan="5" class="p-6 text-center">Selecione uma data para consultar.</td></tr>
+                        <tr><td colspan="5" class="p-6 text-center">Selecione uma data para ver o histórico.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -119,7 +125,7 @@
             <div class="flex justify-between items-center mb-6">
                 <div>
                     <h2 class="text-2xl font-bold text-white">Seus Produtos</h2>
-                    <p class="text-sm text-zinc-400">Gerenciamento do Cardápio</p>
+                    <p class="text-sm text-zinc-400">Arraste os itens para reorganizar a ordem no cardápio</p>
                 </div>
                 <button onclick="abrirModalProduto()" class="bg-yellow-500 hover:bg-yellow-400 text-black px-4 py-2 rounded font-bold transition shadow-lg shadow-yellow-500/20 flex items-center gap-2">
                     <i class="fa-solid fa-plus"></i> Novo Produto
@@ -130,14 +136,14 @@
                 <table class="w-full text-left text-sm text-zinc-400">
                     <thead class="bg-zinc-900 text-xs uppercase text-zinc-500 font-bold tracking-wider">
                         <tr>
-                            <th class="p-4">Produto</th>
+                            <th class="p-4 w-10"></th> <th class="p-4">Produto</th>
                             <th class="p-4">Preço</th>
                             <th class="p-4">Status</th>
                             <th class="p-4 text-right">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="lista-produtos" class="divide-y divide-zinc-800/50">
-                        <tr><td colspan="4" class="p-6 text-center animate-pulse">Carregando produtos...</td></tr>
+                        <tr><td colspan="5" class="p-6 text-center">Carregando cardápio...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -162,6 +168,7 @@
                             </div>
                         </div>
                     </div>
+                    
                     <div class="space-y-4 pt-4 border-t border-zinc-800">
                         <div>
                             <label class="block text-sm font-medium text-zinc-400 mb-2">Logomarca (Upload p/ Supabase)</label>
@@ -172,6 +179,21 @@
                             <input type="file" id="cfg-banner-file" accept="image/*" class="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-zinc-800 file:text-yellow-500 hover:file:bg-zinc-700 cursor-pointer transition">
                         </div>
                     </div>
+
+                    <div class="pt-6 border-t border-zinc-800">
+                        <label class="block text-sm font-medium text-zinc-400 mb-3">Taxas de Entrega por Região</label>
+                        
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="new-taxa-bairro" placeholder="Nome do Bairro (Ex: Centro)" class="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg p-3 text-white focus:border-yellow-500 outline-none transition text-sm">
+                            <input type="number" id="new-taxa-valor" placeholder="R$ 0.00" step="0.50" class="w-32 bg-zinc-950 border border-zinc-700 rounded-lg p-3 text-white focus:border-yellow-500 outline-none transition text-sm font-mono">
+                            <button onclick="adicionarTaxa()" class="bg-green-600 hover:bg-green-500 text-white px-4 rounded-lg font-bold transition shadow-lg"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+
+                        <div id="lista-taxas-config" class="space-y-2 max-h-60 overflow-y-auto pr-2">
+                            <div class="text-zinc-500 text-xs italic text-center py-2">Carregando taxas...</div>
+                        </div>
+                    </div>
+
                     <div class="pt-6 border-t border-zinc-800 flex justify-end">
                         <button onclick="salvarConfig()" id="btn-save-config" class="w-full md:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-12 rounded-lg transition shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2">
                             <i class="fa-solid fa-save"></i> Salvar Todas as Alterações
@@ -246,7 +268,6 @@
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5iaHB5Y3Nmbmpncmhud3R6d3N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMTM2NzUsImV4cCI6MjA4NDY4OTY3NX0.LsNVvMG0gWuu7noJk-YnQTpTDRVQMHtqz1Li2nDgAxM';
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
-        // --- LOGICA DE SEPARAÇÃO POR LOJA ---
         const urlParams = new URLSearchParams(window.location.search);
         const LOJA_SLUG = urlParams.get('loja') || 'geral';
 
@@ -271,6 +292,8 @@
             if (tab === 'cardapio') listarProdutos();
             if (tab === 'pedidos') { carregarPedidos(); carregarFaturamentoDiario(); }
             if (tab === 'historico') carregarHistorico();
+            // NOVA LÓGICA: SE FOR ABA CONFIG, CARREGA AS TAXAS TAMBÉM
+            if (tab === 'config') carregarTaxas();
         }
 
         async function carregarHistorico() {
@@ -332,7 +355,6 @@
                 const isPreparando = p.status === 'preparando';
                 const isPago = p.status_pagamento === 'pago';
 
-                // Botão Saiu para Entrega / Pedido Pronto
                 let btnWhatsApp = '';
                 if (p.tipo_entrega === 'delivery') {
                     btnWhatsApp = `
@@ -371,7 +393,6 @@
             }).join('');
         }
 
-        // FUNÇÃO WHATSAPP DELIVERY
         function enviarMensagemEntrega(pedido) {
             const fone = pedido.telefone ? pedido.telefone.replace(/\D/g, '') : '';
             if (!fone) return alert('Cliente não informou o telefone!');
@@ -379,7 +400,6 @@
             window.open(`https://api.whatsapp.com/send?phone=55${fone}&text=${msg}`, '_blank');
         }
 
-        // FUNÇÃO WHATSAPP MESA (PEDIDO PRONTO)
         function enviarMensagemProntoMesa(pedido) {
             const fone = pedido.telefone ? pedido.telefone.replace(/\D/g, '') : '';
             if (!fone) return alert('Cliente não informou o telefone!');
@@ -404,17 +424,53 @@
         function mostrarNotificacaoVisual(texto) { const div = document.createElement('div'); div.className = "fixed top-4 right-4 bg-yellow-500 text-black font-bold px-6 py-4 rounded-lg shadow-2xl z-[99] animate-bounce flex items-center gap-2 border-2 border-yellow-400"; div.innerHTML = `<i class="fa-solid fa-bell text-xl"></i> <span>${texto}</span>`; document.body.appendChild(div); setTimeout(() => div.remove(), 5000); }
 
         async function listarProdutos() {
-            const { data } = await client.from('produtos').select('*').eq('restaurante_slug', LOJA_SLUG).order('categoria');
-            document.getElementById('lista-produtos').innerHTML = (data || []).map(p => `
-                <tr class="hover:bg-zinc-800/30 transition border-b border-zinc-800">
-                    <td class="p-4 flex items-center gap-3">
-                        <img src="${p.imagem_url || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded object-cover">
-                        <div><div class="font-bold text-white text-sm">${p.nome}</div><div class="text-xs text-zinc-500">${p.categoria}</div></div>
-                    </td>
-                    <td class="p-4 text-yellow-500 text-sm font-mono">R$ ${parseFloat(p.preco).toFixed(2)}</td>
-                    <td class="p-4"><button onclick="toggleProd('${p.id}', 'disponivel', ${!p.disponivel})" class="px-2 py-1 rounded text-xs font-bold ${p.disponivel ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}">${p.disponivel ? 'Ativo' : 'Esgotado'}</button></td>
-                    <td class="p-4 text-right"><div class="flex justify-end gap-2"><button onclick='editarProduto(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="text-blue-400 hover:text-white w-8 h-8 rounded bg-blue-900/20 flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button><button onclick="deletarProduto('${p.id}')" class="text-red-400 hover:text-white w-8 h-8 rounded bg-red-900/20 flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button></div></td>
-                </tr>`).join('');
+            try {
+                // Buscamos ordenando pela coluna 'ordem'
+                const { data, error } = await client.from('produtos')
+                    .select('*')
+                    .eq('restaurante_slug', LOJA_SLUG)
+                    .order('ordem', { ascending: true });
+
+                if (error) throw error;
+                const tbody = document.getElementById('lista-produtos');
+                
+                tbody.innerHTML = (data || []).map(p => `
+                    <tr class="hover:bg-zinc-800/30 transition border-b border-zinc-800 item-produto" data-id="${p.id}">
+                        <td class="p-4 cursor-grab text-zinc-600 hover:text-white handle-reorder">
+                            <i class="fa-solid fa-grip-vertical"></i>
+                        </td>
+                        <td class="p-4 flex items-center gap-3">
+                            <img src="${p.imagem_url || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded object-cover">
+                            <div><div class="font-bold text-white text-sm">${p.nome}</div><div class="text-xs text-zinc-500">${p.categoria}</div></div>
+                        </td>
+                        <td class="p-4 text-yellow-500 text-sm font-mono">R$ ${parseFloat(p.preco).toFixed(2)}</td>
+                        <td class="p-4"><button onclick="toggleProd('${p.id}', 'disponivel', ${!p.disponivel})" class="px-2 py-1 rounded text-xs font-bold ${p.disponivel ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}">${p.disponivel ? 'Ativo' : 'Esgotado'}</button></td>
+                        <td class="p-4 text-right"><div class="flex justify-end gap-2"><button onclick='editarProduto(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="text-blue-400 hover:text-white w-8 h-8 rounded bg-blue-900/20 flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button><button onclick="deletarProduto('${p.id}')" class="text-red-400 hover:text-white w-8 h-8 rounded bg-red-900/20 flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button></div></td>
+                    </tr>`).join('');
+
+                // Inicializa o sistema de arrastar e soltar
+                configurarArrastar();
+
+            } catch (e) { console.error(e); }
+        }
+
+        function configurarArrastar() {
+            const el = document.getElementById('lista-produtos');
+            Sortable.create(el, {
+                handle: '.handle-reorder', 
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: async function() {
+                    const itens = Array.from(el.querySelectorAll('.item-produto'));
+                    // Atualiza a ordem de cada item no banco de dados
+                    const promises = itens.map((item, index) => {
+                        const id = item.getAttribute('data-id');
+                        return client.from('produtos').update({ ordem: index }).eq('id', id);
+                    });
+                    await Promise.all(promises);
+                    mostrarNotificacaoVisual("Ordem salva com sucesso!");
+                }
+            });
         }
         
         function abrirModalProduto() { 
@@ -475,6 +531,80 @@
             await client.from('restaurantes').update(updates).eq('slug', LOJA_SLUG);
             alert('Salvo!'); location.reload();
         }
+
+        // --- FUNÇÕES NOVAS PARA GERENCIAR TAXAS (Adicionadas sem quebrar nada) ---
+        
+        async function carregarTaxas() {
+            const container = document.getElementById('lista-taxas-config');
+            container.innerHTML = '<div class="text-zinc-500 text-xs italic text-center py-2">Carregando taxas...</div>';
+
+            const { data, error } = await client
+                .from('taxas_entrega')
+                .select('*')
+                .eq('restaurante_slug', LOJA_SLUG)
+                .order('valor', { ascending: true });
+
+            if (error) {
+                console.error(error);
+                container.innerHTML = '<div class="text-red-500 text-xs text-center">Erro ao carregar.</div>';
+                return;
+            }
+
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="text-zinc-500 text-xs italic text-center py-2">Nenhuma taxa cadastrada. O sistema usará o padrão (R$ 7.00).</div>';
+                return;
+            }
+
+            container.innerHTML = data.map(item => `
+                <div class="flex justify-between items-center bg-zinc-950 p-3 rounded-lg border border-zinc-800">
+                    <div>
+                        <div class="text-white font-bold text-sm">${item.bairro}</div>
+                        <div class="text-xs text-green-400">R$ ${parseFloat(item.valor).toFixed(2)}</div>
+                    </div>
+                    <button onclick="deletarTaxa(${item.id})" class="text-red-400 hover:text-white bg-red-900/20 p-2 rounded transition">
+                        <i class="fa-solid fa-trash text-xs"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function adicionarTaxa() {
+            const bairro = document.getElementById('new-taxa-bairro').value;
+            const valor = document.getElementById('new-taxa-valor').value;
+
+            if (!bairro || !valor) return alert("Preencha o nome do bairro e o valor.");
+
+            const { error } = await client.from('taxas_entrega').insert({
+                restaurante_slug: LOJA_SLUG,
+                bairro: bairro,
+                valor: parseFloat(valor),
+                ativo: true
+            });
+
+            if (error) {
+                alert("Erro ao salvar taxa.");
+                console.error(error);
+            } else {
+                // Limpa campos e recarrega
+                document.getElementById('new-taxa-bairro').value = '';
+                document.getElementById('new-taxa-valor').value = '';
+                carregarTaxas();
+            }
+        }
+
+        async function deletarTaxa(id) {
+            if (!confirm("Remover esta taxa de entrega?")) return;
+            
+            const { error } = await client.from('taxas_entrega').delete().eq('id', id);
+            
+            if (error) {
+                alert("Erro ao deletar.");
+                console.error(error);
+            } else {
+                carregarTaxas();
+            }
+        }
+
     </script>
 </body>
 </html>
