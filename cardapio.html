@@ -11,24 +11,9 @@
         body { font-family: 'Inter', sans-serif; background-color: #09090b; color: #f4f4f5; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .loader { border: 4px solid #f3f3f3; border-top: 4px solid #eab308; border-radius: 50%; width: 30px; height: 30px; animation: spin 1s linear infinite; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .payment-option input:checked + div { border-color: #eab308; background-color: rgba(234, 179, 8, 0.1); }
-
-        /* Limita a descrição para garantir que o card mantenha um tamanho bom */
-        .desc-limit {
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        /* Efeito visual ao tocar no card */
-        .card-active:active {
-            transform: scale(0.98);
-            background-color: rgba(255, 255, 255, 0.05);
-        }
+        .desc-limit { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
+        .card-active:active { transform: scale(0.98); background-color: rgba(255, 255, 255, 0.05); }
     </style>
 </head>
 <body class="pb-24 select-none">
@@ -72,42 +57,49 @@
     </div>
 
     <div id="modal-checkout" class="fixed inset-0 z-[60] bg-black/90 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-        <div class="bg-zinc-900 w-full max-w-md h-[95vh] sm:h-auto rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden border border-zinc-800">
-            <div class="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-950">
+        <div class="bg-zinc-900 w-full max-w-md h-auto max-h-[85vh] rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden border border-zinc-800 shadow-2xl">
+            
+            <div class="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-950 shrink-0">
                 <h2 class="text-lg font-bold text-white">Finalizar Pedido</h2>
                 <button onclick="closeCheckout()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
             </div>
             
-            <div class="flex-1 overflow-y-auto p-4 space-y-4">
-                <div id="checkout-items" class="space-y-3"></div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                <div id="checkout-items" class="space-y-2"></div>
+
+                <div id="resumo-taxa" class="hidden flex justify-between text-yellow-500 text-sm font-bold border-t border-zinc-800 pt-2">
+                    <span>Taxa de Entrega:</span>
+                    <span>+ R$ <span id="resumo-taxa-valor">0,00</span></span>
+                </div>
+
                 <hr class="border-zinc-800">
                 
                 <div class="space-y-3">
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Seu Nome</label>
-                        <input type="text" id="input-nome" class="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white outline-none focus:border-yellow-500" placeholder="Como te chamamos?">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Seu Nome</label>
+                        <input type="text" id="input-nome" class="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white outline-none focus:border-yellow-500 text-sm" placeholder="Como te chamamos?">
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">WhatsApp (DDD + Número)</label>
-                        <input type="tel" id="input-tel" class="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white outline-none focus:border-yellow-500" placeholder="(00) 00000-0000">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">WhatsApp</label>
+                        <input type="tel" id="input-tel" class="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white outline-none focus:border-yellow-500 text-sm" placeholder="(00) 00000-0000">
                     </div>
                     
-                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Onde você está?</label>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Entrega</label>
                     <div class="grid grid-cols-2 gap-2">
                         <button onclick="setDeliveryType('mesa')" id="btn-mesa" class="p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 font-medium text-sm">Na Mesa</button>
                         <button onclick="setDeliveryType('delivery')" id="btn-delivery" class="p-2 rounded border border-zinc-700 text-gray-400 text-sm">Delivery</button>
                     </div>
 
                     <div id="area-mesa">
-                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1 mt-2">Número da Mesa</label>
-                        <input type="number" id="input-mesa" class="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white outline-none focus:border-yellow-500" placeholder="Ex: 10">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1 mt-2">Nº da Mesa</label>
+                        <input type="number" id="input-mesa" class="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white outline-none focus:border-yellow-500 text-sm" placeholder="Ex: 10">
                     </div>
 
-                    <div id="area-delivery" class="hidden space-y-3">
+                    <div id="area-delivery" class="hidden space-y-2">
                         <div class="grid grid-cols-4 gap-2">
                             <div class="col-span-3">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase">Rua / Avenida</label>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase">Rua</label>
                                 <input type="text" id="delivery-rua" class="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white outline-none focus:border-yellow-500 text-sm">
                             </div>
                             <div class="col-span-1">
@@ -115,28 +107,42 @@
                                 <input type="text" id="delivery-num" class="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white outline-none focus:border-yellow-500 text-sm">
                             </div>
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-gray-500 uppercase">Bairro</label>
-                            <input type="text" id="delivery-bairro" class="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white outline-none focus:border-yellow-500 text-sm">
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase">Bairro</label>
+                                <input type="text" id="delivery-bairro" placeholder="Nome do bairro" class="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white outline-none focus:border-yellow-500 text-sm">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase">Região (Taxa)</label>
+                                <select id="delivery-taxa-select" onchange="atualizarTaxaEntrega()" class="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white outline-none focus:border-yellow-500 text-sm appearance-none cursor-pointer truncate">
+                                    <option value="" data-taxa="0">Carregando...</option>
+                                </select>
+                            </div>
                         </div>
+                        
+                        <div id="aviso-taxa" class="hidden text-[10px] text-yellow-500 font-bold flex items-center justify-end gap-1">
+                            <i class="fa-solid fa-motorcycle"></i> Taxa aplicada: R$ <span id="valor-taxa-visual">0,00</span>
+                        </div>
+
                         <div>
                             <label class="block text-[10px] font-bold text-gray-500 uppercase">Ponto de Referência</label>
-                            <input type="text" id="delivery-ref" class="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white outline-none focus:border-yellow-500 text-sm" placeholder="Perto de onde?">
+                            <input type="text" id="delivery-ref" class="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white outline-none focus:border-yellow-500 text-sm" placeholder="Opcional">
                         </div>
                     </div>
 
                     <hr class="border-zinc-800">
 
-                    <label class="block text-xs font-bold text-gray-400 uppercase">Forma de Pagamento</label>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase">Pagamento</label>
                     <div class="grid grid-cols-2 gap-3">
-                        <label class="payment-option cursor-pointer"><input type="radio" name="pagamento" value="pix" checked class="hidden"><div class="border border-zinc-700 rounded-lg p-3 text-center text-white text-xs font-bold">Pix</div></label>
-                        <label class="payment-option cursor-pointer"><input type="radio" name="pagamento" value="cartao" class="hidden"><div class="border border-zinc-700 rounded-lg p-3 text-center text-white text-xs font-bold">Cartão</div></label>
+                        <label class="payment-option cursor-pointer"><input type="radio" name="pagamento" value="pix" checked class="hidden"><div class="border border-zinc-700 rounded-lg p-2 text-center text-white text-xs font-bold">Pix</div></label>
+                        <label class="payment-option cursor-pointer"><input type="radio" name="pagamento" value="cartao" class="hidden"><div class="border border-zinc-700 rounded-lg p-2 text-center text-white text-xs font-bold">Cartão</div></label>
                     </div>
                 </div>
             </div>
 
-            <div class="p-4 bg-zinc-950 border-t border-zinc-800">
-                <button onclick="processarPedido()" id="btn-confirmar" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg shadow-lg hover:bg-green-500 transition active:scale-95">
+            <div class="p-4 bg-zinc-950 border-t border-zinc-800 shrink-0">
+                <button onclick="processarPedido()" id="btn-confirmar" class="w-full bg-green-600 text-white font-bold py-3 rounded-lg shadow-lg hover:bg-green-500 transition active:scale-95 text-sm">
                     Confirmar Pedido
                 </button>
             </div>
@@ -155,11 +161,75 @@
         let deliveryType = 'mesa';
         let produtosCache = [];
 
+        let taxaEntregaAtual = 0;
+        const TAXA_PADRAO_AUTOMATICA = 7.00;
+
         document.addEventListener('DOMContentLoaded', async () => {
             await carregarLoja();
             await carregarProdutos();
             carregarDadosLocais();
+            await carregarOpcoesTaxa(); 
         });
+
+        async function carregarOpcoesTaxa() {
+            const select = document.getElementById('delivery-taxa-select');
+            select.innerHTML = ''; 
+
+            const { data } = await client
+                .from('taxas_entrega')
+                .select('*')
+                .eq('ativo', true)
+                .eq('restaurante_slug', LOJA_SLUG)
+                .order('valor');
+
+            if (data && data.length > 0) {
+                select.innerHTML = '<option value="" data-taxa="0">Selecione...</option>';
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    // Exibe nome curto no select para caber no celular
+                    option.value = item.bairro; 
+                    option.innerText = `${item.bairro} (+R$${parseFloat(item.valor).toFixed(2)})`;
+                    option.setAttribute('data-taxa', item.valor);
+                    select.appendChild(option);
+                });
+            } else {
+                const option = document.createElement('option');
+                option.value = "Taxa Fixa";
+                option.innerText = `Fixa (+R$${TAXA_PADRAO_AUTOMATICA.toFixed(2)})`;
+                option.setAttribute('data-taxa', TAXA_PADRAO_AUTOMATICA);
+                option.selected = true; 
+                select.appendChild(option);
+                setTimeout(atualizarTaxaEntrega, 200);
+            }
+        }
+
+        function atualizarTaxaEntrega() {
+            const select = document.getElementById('delivery-taxa-select');
+            const optionSelecionada = select.options[select.selectedIndex];
+            
+            if (!optionSelecionada) {
+                taxaEntregaAtual = 0;
+            } else {
+                taxaEntregaAtual = parseFloat(optionSelecionada.getAttribute('data-taxa')) || 0;
+            }
+
+            const aviso = document.getElementById('aviso-taxa');
+            const visual = document.getElementById('valor-taxa-visual');
+            const resumoDiv = document.getElementById('resumo-taxa');
+            const resumoValor = document.getElementById('resumo-taxa-valor');
+
+            if (taxaEntregaAtual > 0) {
+                aviso.classList.remove('hidden');
+                visual.innerText = taxaEntregaAtual.toFixed(2);
+                resumoDiv.classList.remove('hidden');
+                resumoValor.innerText = taxaEntregaAtual.toFixed(2);
+            } else {
+                aviso.classList.add('hidden');
+                resumoDiv.classList.add('hidden');
+            }
+
+            updateCartUI();
+        }
 
         async function carregarLoja() {
             const { data } = await client.from('restaurantes').select('*').eq('slug', LOJA_SLUG).single();
@@ -191,9 +261,7 @@
                     return `
                     <div onclick="${esgotado ? '' : `addToCart('${p.id}')`}" class="flex gap-4 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800 mb-3 relative overflow-hidden card-active transition-all">
                         ${p.mostrar_promo ? '<div class="absolute top-0 right-0 bg-yellow-500 text-black text-[9px] font-black px-2 py-1 rounded-bl-lg">PROMO</div>' : ''}
-                        
                         <img src="${p.imagem_url || 'https://via.placeholder.com/80'}" class="w-24 h-24 rounded-lg object-cover flex-shrink-0 ${esgotado ? 'grayscale opacity-50' : ''}">
-                        
                         <div class="flex-1 flex flex-col justify-between min-w-0 py-1">
                             <div>
                                 <h3 class="font-bold text-white text-sm truncate">${p.nome}</h3>
@@ -218,13 +286,15 @@
             if(prod) { 
                 cart.push(prod); 
                 updateCartUI(); 
-                // Pequeno feedback tátil se o navegador suportar
                 if(window.navigator.vibrate) window.navigator.vibrate(50);
             }
         }
 
         function updateCartUI() {
-            document.getElementById('cart-total').innerText = 'R$ ' + cart.reduce((a,b)=>a+b.preco,0).toFixed(2);
+            const totalProdutos = cart.reduce((a,b)=>a+b.preco,0);
+            const totalFinal = totalProdutos + (deliveryType === 'delivery' ? taxaEntregaAtual : 0);
+
+            document.getElementById('cart-total').innerText = 'R$ ' + totalFinal.toFixed(2);
             document.getElementById('cart-count').innerText = cart.length;
             const bar = document.getElementById('cart-bar');
             cart.length > 0 ? bar.classList.remove('translate-y-full') : bar.classList.add('translate-y-full');
@@ -241,20 +311,32 @@
             if (!telefone) return alert('Informe seu WhatsApp para avisarmos sobre o pedido.');
             
             let enderecoFinal = "";
+            let taxaAplicada = 0;
+
             if (deliveryType === 'delivery') {
                 const rua = document.getElementById('delivery-rua').value;
                 const num = document.getElementById('delivery-num').value;
-                const bairro = document.getElementById('delivery-bairro').value;
+                const bairroDigitado = document.getElementById('delivery-bairro').value; 
+                const selectTaxa = document.getElementById('delivery-taxa-select');
+                const nomeRegiaoTaxa = selectTaxa.options[selectTaxa.selectedIndex]?.text || ""; 
                 const ref = document.getElementById('delivery-ref').value;
 
-                if (!rua || !num || !bairro) return alert('Preencha os campos de endereço obrigatórios.');
-                enderecoFinal = `Rua: ${rua}, Nº: ${num}, Bairro: ${bairro} | Ref: ${ref}`;
+                if (!rua || !num || !bairroDigitado) return alert('Preencha rua, número e bairro.');
+                if (taxaEntregaAtual === 0 && selectTaxa.value === "") return alert('Selecione a região de entrega para calcular a taxa.');
+                
+                enderecoFinal = `Rua: ${rua}, Nº: ${num}, Bairro: ${bairroDigitado} | Ref: ${ref}`;
+                enderecoFinal += ` | Região Selecionada: ${nomeRegiaoTaxa}`;
+                taxaAplicada = taxaEntregaAtual;
             } else {
                 if (!mesa) return alert('Informe o número da mesa.');
+                taxaAplicada = 0;
             }
 
             const btn = document.getElementById('btn-confirmar');
             btn.disabled = true; btn.innerText = "Enviando...";
+
+            const totalProdutos = cart.reduce((acc, item) => acc + item.preco, 0);
+            const totalComTaxa = totalProdutos + taxaAplicada;
 
             try {
                 const { error } = await client.from('pedidos').insert({
@@ -265,7 +347,7 @@
                     itens: JSON.stringify(cart),
                     observacoes: enderecoFinal,
                     telefone: telefone,
-                    total: cart.reduce((acc, item) => acc + item.preco, 0),
+                    total: totalComTaxa, 
                     status: 'pendente',
                     status_pagamento: 'pendente',
                     metodo_pagamento: metodoPagamento
@@ -299,13 +381,22 @@
             ).join('');
             if(cart.length === 0) closeCheckout();
         }
+
         function setDeliveryType(t) {
             deliveryType = t;
             document.getElementById('area-mesa').classList.toggle('hidden', t !== 'mesa');
             document.getElementById('area-delivery').classList.toggle('hidden', t !== 'delivery');
             document.getElementById('btn-mesa').className = t==='mesa' ? "p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 text-sm" : "p-2 rounded border border-zinc-700 text-gray-400 text-sm";
             document.getElementById('btn-delivery').className = t==='delivery' ? "p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 text-sm" : "p-2 rounded border border-zinc-700 text-gray-400 text-sm";
+            
+            if (t === 'mesa') {
+                taxaEntregaAtual = 0;
+            } else {
+                atualizarTaxaEntrega();
+            }
+            updateCartUI();
         }
+
         function carregarDadosLocais() {
             if(localStorage.getItem('rest_nome')) document.getElementById('input-nome').value = localStorage.getItem('rest_nome');
             if(localStorage.getItem('rest_tel')) document.getElementById('input-tel').value = localStorage.getItem('rest_tel');
