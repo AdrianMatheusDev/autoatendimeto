@@ -15,13 +15,19 @@
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .payment-option input:checked + div { border-color: #eab308; background-color: rgba(234, 179, 8, 0.1); }
 
-        /* CORREÇÃO DO BUG DE CELULAR: Limita a descrição a 3 linhas */
+        /* Limita a descrição para garantir que o card mantenha um tamanho bom */
         .desc-limit {
             display: -webkit-box;
-            -webkit-line-clamp: 3;
+            -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
             text-overflow: ellipsis;
+        }
+
+        /* Efeito visual ao tocar no card */
+        .card-active:active {
+            transform: scale(0.98);
+            background-color: rgba(255, 255, 255, 0.05);
         }
     </style>
 </head>
@@ -179,18 +185,16 @@
             produtosFiltrados.forEach(p => { if(!porCategoria[p.categoria]) porCategoria[p.categoria]=[]; porCategoria[p.categoria].push(p); });
             container.innerHTML = ''; nav.innerHTML = '';
             for(const [cat, itens] of Object.entries(porCategoria)) {
-                nav.innerHTML += `<li onclick="document.getElementById('cat-${cat}').scrollIntoView()" class="whitespace-nowrap cursor-pointer hover:text-white mr-4">${cat}</li>`;
+                nav.innerHTML += `<li onclick="document.getElementById('cat-${cat}').scrollIntoView({behavior: 'smooth'})" class="whitespace-nowrap cursor-pointer hover:text-white mr-4">${cat}</li>`;
                 const htmlItens = itens.map(p => {
                     const esgotado = p.disponivel === false;
                     return `
-                    <div class="flex gap-4 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800 mb-3 relative overflow-hidden min-h-[120px]">
+                    <div onclick="${esgotado ? '' : `addToCart('${p.id}')`}" class="flex gap-4 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800 mb-3 relative overflow-hidden card-active transition-all">
                         ${p.mostrar_promo ? '<div class="absolute top-0 right-0 bg-yellow-500 text-black text-[9px] font-black px-2 py-1 rounded-bl-lg">PROMO</div>' : ''}
                         
-                        <div class="w-24 h-24 flex-shrink-0 self-center">
-                            <img src="${p.imagem_url || 'https://via.placeholder.com/80'}" class="w-full h-full rounded object-cover ${esgotado ? 'grayscale opacity-50' : ''}">
-                        </div>
-
-                        <div class="flex-1 flex flex-col justify-between min-w-0">
+                        <img src="${p.imagem_url || 'https://via.placeholder.com/80'}" class="w-24 h-24 rounded-lg object-cover flex-shrink-0 ${esgotado ? 'grayscale opacity-50' : ''}">
+                        
+                        <div class="flex-1 flex flex-col justify-between min-w-0 py-1">
                             <div>
                                 <h3 class="font-bold text-white text-sm truncate">${p.nome}</h3>
                                 <p class="text-[11px] text-gray-500 desc-limit leading-tight mt-1">${p.descricao||''}</p>
@@ -199,19 +203,24 @@
                                 <span class="text-yellow-500 font-bold text-sm">R$ ${parseFloat(p.preco).toFixed(2)}</span>
                                 ${esgotado 
                                     ? '<span class="text-[9px] bg-red-900/30 text-red-500 font-black px-2 py-1 rounded border border-red-900">ESGOTADO</span>' 
-                                    : `<button onclick="addToCart('${p.id}')" class="bg-zinc-800 w-9 h-9 rounded-full text-white flex items-center justify-center hover:bg-zinc-700 transition-colors"><i class="fa-solid fa-plus text-xs"></i></button>`
+                                    : `<div class="bg-yellow-500 w-8 h-8 rounded-full text-black flex items-center justify-center shadow-lg"><i class="fa-solid fa-plus text-xs"></i></div>`
                                 }
                             </div>
                         </div>
                     </div>`;
                 }).join('');
-                container.innerHTML += `<div id="cat-${cat}" class="mb-6"><h2 class="text-lg font-bold text-white mb-2 border-l-4 border-yellow-500 pl-2 tracking-tight">${cat}</h2>${htmlItens}</div>`;
+                container.innerHTML += `<div id="cat-${cat}" class="mb-6 pt-2"><h2 class="text-lg font-bold text-white mb-2 border-l-4 border-yellow-500 pl-2 tracking-tight">${cat}</h2>${htmlItens}</div>`;
             }
         }
 
         function addToCart(id) { 
             const prod = produtosCache.find(x => x.id === id && x.restaurante_slug === LOJA_SLUG);
-            if(prod) { cart.push(prod); updateCartUI(); }
+            if(prod) { 
+                cart.push(prod); 
+                updateCartUI(); 
+                // Pequeno feedback tátil se o navegador suportar
+                if(window.navigator.vibrate) window.navigator.vibrate(50);
+            }
         }
 
         function updateCartUI() {
@@ -286,7 +295,7 @@
         function closeCheckout() { document.getElementById('modal-checkout').classList.add('hidden'); }
         function renderCheckoutItems() {
             document.getElementById('checkout-items').innerHTML = cart.map((p,i) => 
-                `<div class="flex justify-between bg-zinc-800 p-2 rounded items-center"><span class="text-white text-sm">${p.nome}</span><button onclick="cart.splice(${i},1);updateCartUI();renderCheckoutItems()" class="text-red-400 p-1"><i class="fa-solid fa-trash text-xs"></i></button></div>`
+                `<div class="flex justify-between bg-zinc-800 p-2 rounded items-center mb-2"><span class="text-white text-sm">${p.nome}</span><button onclick="event.stopPropagation(); cart.splice(${i},1);updateCartUI();renderCheckoutItems()" class="text-red-400 p-2"><i class="fa-solid fa-trash text-xs"></i></button></div>`
             ).join('');
             if(cart.length === 0) closeCheckout();
         }
@@ -294,8 +303,8 @@
             deliveryType = t;
             document.getElementById('area-mesa').classList.toggle('hidden', t !== 'mesa');
             document.getElementById('area-delivery').classList.toggle('hidden', t !== 'delivery');
-            document.getElementById('btn-mesa').className = t==='mesa' ? "p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 font-medium text-sm" : "p-2 rounded border border-zinc-700 text-gray-400 text-sm";
-            document.getElementById('btn-delivery').className = t==='delivery' ? "p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 font-medium text-sm" : "p-2 rounded border border-zinc-700 text-gray-400 text-sm";
+            document.getElementById('btn-mesa').className = t==='mesa' ? "p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 text-sm" : "p-2 rounded border border-zinc-700 text-gray-400 text-sm";
+            document.getElementById('btn-delivery').className = t==='delivery' ? "p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 text-sm" : "p-2 rounded border border-zinc-700 text-gray-400 text-sm";
         }
         function carregarDadosLocais() {
             if(localStorage.getItem('rest_nome')) document.getElementById('input-nome').value = localStorage.getItem('rest_nome');
