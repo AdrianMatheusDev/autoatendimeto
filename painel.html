@@ -261,16 +261,15 @@
                         </div>
                         <div id="area-tamanhos" class="hidden space-y-2 bg-zinc-950/50 p-2 sm:p-3 rounded border border-zinc-800">
                             <p class="text-xs text-zinc-500 italic text-center" id="msg-sem-tam">Nenhum tamanho configurado.</p>
-                            </div>
+                        </div>
                     </div>
 
                     <div>
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-sm font-bold text-white uppercase">Adicionais Opcionais</span>
-                            <button onclick="addAdicionalRow()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-1 rounded border border-zinc-700"><i class="fa-solid fa-plus"></i> Add</button>
+                            <button onclick="addAdicionalRow()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-1 rounded border border-zinc-700"><i class="fa-solid fa-plus"></i> Add Adicional</button>
                         </div>
-                        <div id="area-adicionais" class="space-y-2 bg-zinc-950/50 p-2 sm:p-3 rounded border border-zinc-800">
-                            </div>
+                        <div id="area-adicionais" class="space-y-2 bg-zinc-950/50 p-2 sm:p-3 rounded border border-zinc-800"></div>
                     </div>
                 </div>
 
@@ -402,6 +401,10 @@
                 let badgePagamento = p.status_pagamento === 'pago' ? `<div class="flex items-center gap-1 text-green-400 bg-green-900/30 px-2 py-1 rounded text-xs font-bold border border-green-800"><i class="fa-solid fa-check-circle"></i> PAGO</div>` : `<div class="flex items-center gap-1 text-zinc-500 bg-zinc-800 px-2 py-1 rounded text-xs font-bold border border-zinc-700">A RECEBER</div>`;
                 const isPreparando = p.status === 'preparando';
                 const isPago = p.status_pagamento === 'pago';
+                
+                // --- MODIFICAÇÃO AQUI: EXIBIR MÉTODO DE PAGAMENTO NO CARD DO PAINEL ---
+                const metodo = p.metodo_pagamento || '---';
+                const destaqueTroco = metodo.toLowerCase().includes('troco') ? 'text-yellow-500 font-bold' : 'text-zinc-400';
 
                 let btnWhatsApp = '';
                 if (p.tipo_entrega === 'delivery') {
@@ -429,6 +432,11 @@
                         <div class="mb-4"><span class="text-[10px] uppercase font-bold text-zinc-500">Status:</span> <span class="text-[10px] uppercase font-bold ${isPreparando ? 'text-yellow-500' : 'text-blue-500'}">${p.status}</span></div>
                         <ul class="mb-4 space-y-1">${listaItens}</ul>
                         ${p.observacoes ? `<div class="text-xs bg-yellow-900/10 border border-yellow-900/30 text-yellow-500 p-3 rounded mb-4">${p.observacoes}</div>` : ''}
+                        
+                        <div class="mb-2 text-xs border-t border-zinc-800 pt-2">
+                            <span class="text-zinc-500 uppercase font-bold">Pagamento:</span> <span class="${destaqueTroco}">${metodo}</span>
+                        </div>
+
                         <div class="flex justify-between items-center bg-zinc-950 p-2 rounded border border-zinc-800 mb-4"><div class="flex flex-col"><span class="text-xs text-zinc-500 uppercase font-bold">Total</span><span class="text-lg font-bold text-green-400 font-mono">R$ ${totalPedido}</span></div>${badgePagamento}</div>
                     </div>
                     <div class="grid grid-cols-2 gap-2 mt-auto">
@@ -513,8 +521,6 @@
             });
         }
         
-        // --- FUNÇÕES DE TAMANHOS E ADICIONAIS ---
-
         function toggleAreaTamanhos() {
             const check = document.getElementById('check-tem-tamanhos');
             const area = document.getElementById('area-tamanhos');
@@ -568,7 +574,6 @@
             document.getElementById('prod-promo').checked = false;
             document.getElementById('prod-disponivel').checked = true;
             
-            // Limpar áreas dinâmicas
             document.getElementById('area-tamanhos').innerHTML = '<p class="text-xs text-zinc-500 italic text-center" id="msg-sem-tam">Nenhum tamanho configurado.</p>';
             document.getElementById('area-adicionais').innerHTML = '';
             document.getElementById('check-tem-tamanhos').checked = false;
@@ -589,14 +594,12 @@
             document.getElementById('prod-promo').checked = p.mostrar_promo || false;
             document.getElementById('prod-disponivel').checked = p.disponivel !== false;
 
-            // Carregar Tamanhos
             if (p.variacoes && p.variacoes.length > 0) {
                 document.getElementById('check-tem-tamanhos').checked = true;
                 toggleAreaTamanhos();
                 p.variacoes.forEach(v => addTamanhoRow(v.nome, v.preco));
             }
 
-            // Carregar Adicionais
             if (p.adicionais && p.adicionais.length > 0) {
                 p.adicionais.forEach(a => addAdicionalRow(a.nome, a.preco));
             }
@@ -605,7 +608,6 @@
         async function salvarProduto() {
             const id = document.getElementById('prod-id').value;
             
-            // Coletar Tamanhos
             let variacoes = [];
             if(document.getElementById('check-tem-tamanhos').checked) {
                 document.querySelectorAll('.row-tamanho').forEach(row => {
@@ -615,7 +617,6 @@
                 });
             }
 
-            // Coletar Adicionais
             let adicionais = [];
             document.querySelectorAll('.row-adicional').forEach(row => {
                 const nome = row.querySelector('.input-add-nome').value;
@@ -623,7 +624,6 @@
                 if(nome && !isNaN(preco)) adicionais.push({ nome, preco });
             });
 
-            // Definir preço base (se tiver tamanhos, pega o menor preço como base)
             let precoBase = parseFloat(document.getElementById('prod-preco').value);
             if(variacoes.length > 0) {
                 variacoes.sort((a,b) => a.preco - b.preco);
