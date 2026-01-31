@@ -14,6 +14,10 @@
         .payment-option input:checked + div { border-color: #eab308; background-color: rgba(234, 179, 8, 0.1); }
         .desc-limit { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; }
         .card-active:active { transform: scale(0.98); background-color: rgba(255, 255, 255, 0.05); }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-fade-in { animation: fadeIn 0.2s ease-out; }
     </style>
 </head>
 <body class="pb-24 select-none">
@@ -53,6 +57,42 @@
             <button onclick="openCheckout()" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-6 rounded-lg transition shadow-lg shadow-yellow-500/20">
                 Ver Carrinho <span id="cart-count" class="bg-black text-white text-xs px-2 py-0.5 rounded-full ml-1">0</span>
             </button>
+        </div>
+    </div>
+
+    <div id="modal-detalhes" class="fixed inset-0 z-[70] bg-black/90 hidden flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in">
+        <div class="bg-zinc-900 w-full max-w-md rounded-t-2xl sm:rounded-2xl flex flex-col max-h-[90vh] border border-zinc-800 shadow-2xl overflow-hidden">
+            
+            <div id="modal-detalhe-img-area" class="h-40 bg-zinc-800 bg-cover bg-center relative">
+                <button onclick="fecharModalDetalhes()" class="absolute top-4 right-4 bg-black/50 text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-black/80 transition"><i class="fa-solid fa-times"></i></button>
+            </div>
+
+            <div class="p-5 overflow-y-auto custom-scrollbar">
+                <h2 id="modal-detalhe-nome" class="text-2xl font-bold text-white mb-1">Nome do Produto</h2>
+                <p id="modal-detalhe-desc" class="text-sm text-gray-400 mb-4">Descrição do produto...</p>
+                
+                <div id="area-selecao-tamanho" class="mb-6 hidden">
+                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Escolha o Tamanho <span class="text-red-500">*</span></h3>
+                    <div id="lista-tamanhos" class="space-y-2"></div>
+                </div>
+
+                <div id="area-selecao-adicionais" class="mb-6 hidden">
+                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Adicionais</h3>
+                    <div id="lista-adicionais" class="space-y-2"></div>
+                </div>
+
+                 <div>
+                    <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Observação</h3>
+                    <textarea id="modal-detalhe-obs" placeholder="Ex: Sem cebola, capricha no molho..." class="w-full bg-zinc-800 border border-zinc-700 rounded p-3 text-white text-sm outline-none focus:border-yellow-500" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="p-4 bg-zinc-950 border-t border-zinc-800 flex justify-between items-center shrink-0">
+                <div class="text-white font-bold text-lg" id="modal-detalhe-preco">R$ 0,00</div>
+                <button onclick="confirmarAdicaoCarrinho()" class="bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-2 px-6 rounded-lg shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed" id="btn-add-modal">
+                    Adicionar
+                </button>
+            </div>
         </div>
     </div>
 
@@ -160,9 +200,13 @@
         let cart = [];
         let deliveryType = 'mesa';
         let produtosCache = [];
-
         let taxaEntregaAtual = 0;
         const TAXA_PADRAO_AUTOMATICA = 7.00;
+
+        // Variáveis globais para o Modal de Seleção
+        let produtoSelecionadoAtual = null;
+        let tamanhoSelecionado = null;
+        let adicionaisSelecionados = [];
 
         document.addEventListener('DOMContentLoaded', async () => {
             await carregarLoja();
@@ -174,19 +218,11 @@
         async function carregarOpcoesTaxa() {
             const select = document.getElementById('delivery-taxa-select');
             select.innerHTML = ''; 
-
-            const { data } = await client
-                .from('taxas_entrega')
-                .select('*')
-                .eq('ativo', true)
-                .eq('restaurante_slug', LOJA_SLUG)
-                .order('valor');
-
+            const { data } = await client.from('taxas_entrega').select('*').eq('ativo', true).eq('restaurante_slug', LOJA_SLUG).order('valor');
             if (data && data.length > 0) {
                 select.innerHTML = '<option value="" data-taxa="0">Selecione...</option>';
                 data.forEach(item => {
                     const option = document.createElement('option');
-                    // Exibe nome curto no select para caber no celular
                     option.value = item.bairro; 
                     option.innerText = `${item.bairro} (+R$${parseFloat(item.valor).toFixed(2)})`;
                     option.setAttribute('data-taxa', item.valor);
@@ -206,12 +242,8 @@
         function atualizarTaxaEntrega() {
             const select = document.getElementById('delivery-taxa-select');
             const optionSelecionada = select.options[select.selectedIndex];
-            
-            if (!optionSelecionada) {
-                taxaEntregaAtual = 0;
-            } else {
-                taxaEntregaAtual = parseFloat(optionSelecionada.getAttribute('data-taxa')) || 0;
-            }
+            if (!optionSelecionada) { taxaEntregaAtual = 0; } 
+            else { taxaEntregaAtual = parseFloat(optionSelecionada.getAttribute('data-taxa')) || 0; }
 
             const aviso = document.getElementById('aviso-taxa');
             const visual = document.getElementById('valor-taxa-visual');
@@ -227,7 +259,6 @@
                 aviso.classList.add('hidden');
                 resumoDiv.classList.add('hidden');
             }
-
             updateCartUI();
         }
 
@@ -242,7 +273,7 @@
         }
         
         async function carregarProdutos() {
-            const { data } = await client.from('produtos').select('*').eq('restaurante_slug', LOJA_SLUG).order('categoria');
+            const { data } = await client.from('produtos').select('*').eq('restaurante_slug', LOJA_SLUG).order('ordem', { ascending: true });
             produtosCache = data || []; 
             renderizarProdutos(produtosCache);
         }
@@ -252,14 +283,21 @@
             const nav = document.getElementById('categories-list');
             const porCategoria = {}; 
             const produtosFiltrados = produtos.filter(p => p.restaurante_slug === LOJA_SLUG);
+            
             produtosFiltrados.forEach(p => { if(!porCategoria[p.categoria]) porCategoria[p.categoria]=[]; porCategoria[p.categoria].push(p); });
+            
             container.innerHTML = ''; nav.innerHTML = '';
+            
             for(const [cat, itens] of Object.entries(porCategoria)) {
                 nav.innerHTML += `<li onclick="document.getElementById('cat-${cat}').scrollIntoView({behavior: 'smooth'})" class="whitespace-nowrap cursor-pointer hover:text-white mr-4">${cat}</li>`;
+                
                 const htmlItens = itens.map(p => {
                     const esgotado = p.disponivel === false;
+                    const temVariacoes = p.variacoes && p.variacoes.length > 0;
+                    const textoPreco = temVariacoes ? `<span class="text-xs text-gray-400 font-normal">A partir de</span> <br> R$ ${parseFloat(p.preco).toFixed(2)}` : `R$ ${parseFloat(p.preco).toFixed(2)}`;
+
                     return `
-                    <div onclick="${esgotado ? '' : `addToCart('${p.id}')`}" class="flex gap-4 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800 mb-3 relative overflow-hidden card-active transition-all">
+                    <div onclick="${esgotado ? '' : `abrirModalSelecao('${p.id}')`}" class="flex gap-4 bg-zinc-900/50 p-3 rounded-lg border border-zinc-800 mb-3 relative overflow-hidden card-active transition-all cursor-pointer">
                         ${p.mostrar_promo ? '<div class="absolute top-0 right-0 bg-yellow-500 text-black text-[9px] font-black px-2 py-1 rounded-bl-lg">PROMO</div>' : ''}
                         <img src="${p.imagem_url || 'https://via.placeholder.com/80'}" class="w-24 h-24 rounded-lg object-cover flex-shrink-0 ${esgotado ? 'grayscale opacity-50' : ''}">
                         <div class="flex-1 flex flex-col justify-between min-w-0 py-1">
@@ -267,8 +305,8 @@
                                 <h3 class="font-bold text-white text-sm truncate">${p.nome}</h3>
                                 <p class="text-[11px] text-gray-500 desc-limit leading-tight mt-1">${p.descricao||''}</p>
                             </div>
-                            <div class="flex justify-between items-center mt-2">
-                                <span class="text-yellow-500 font-bold text-sm">R$ ${parseFloat(p.preco).toFixed(2)}</span>
+                            <div class="flex justify-between items-end mt-2">
+                                <div class="text-yellow-500 font-bold text-sm leading-tight">${textoPreco}</div>
                                 ${esgotado 
                                     ? '<span class="text-[9px] bg-red-900/30 text-red-500 font-black px-2 py-1 rounded border border-red-900">ESGOTADO</span>' 
                                     : `<div class="bg-yellow-500 w-8 h-8 rounded-full text-black flex items-center justify-center shadow-lg"><i class="fa-solid fa-plus text-xs"></i></div>`
@@ -281,23 +319,176 @@
             }
         }
 
-        function addToCart(id) { 
-            const prod = produtosCache.find(x => x.id === id && x.restaurante_slug === LOJA_SLUG);
-            if(prod) { 
-                cart.push(prod); 
-                updateCartUI(); 
-                if(window.navigator.vibrate) window.navigator.vibrate(50);
+        // --- LÓGICA DO MODAL DE SELEÇÃO ---
+
+        function abrirModalSelecao(id) {
+            const prod = produtosCache.find(x => x.id === id);
+            if (!prod) return;
+
+            produtoSelecionadoAtual = prod;
+            tamanhoSelecionado = null;
+            adicionaisSelecionados = [];
+
+            // Preencher Infos Básicas
+            document.getElementById('modal-detalhe-nome').innerText = prod.nome;
+            document.getElementById('modal-detalhe-desc').innerText = prod.descricao || '';
+            const imgArea = document.getElementById('modal-detalhe-img-area');
+            if(prod.imagem_url) {
+                imgArea.style.backgroundImage = `url('${prod.imagem_url}')`;
+                imgArea.style.display = 'block';
+            } else {
+                imgArea.style.display = 'none';
             }
+            document.getElementById('modal-detalhe-obs').value = '';
+
+            // Configurar Tamanhos
+            const areaTam = document.getElementById('area-selecao-tamanho');
+            const listaTam = document.getElementById('lista-tamanhos');
+            listaTam.innerHTML = '';
+            
+            if (prod.variacoes && prod.variacoes.length > 0) {
+                areaTam.classList.remove('hidden');
+                prod.variacoes.sort((a,b) => a.preco - b.preco).forEach((v, idx) => {
+                    const div = document.createElement('label');
+                    div.className = "flex justify-between items-center bg-zinc-800 p-3 rounded cursor-pointer border border-transparent hover:border-yellow-500 transition";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <input type="radio" name="tamanho_escolha" value="${idx}" onchange="selecionarTamanho(${idx})" class="accent-yellow-500 w-4 h-4">
+                            <span class="text-white text-sm font-bold">${v.nome}</span>
+                        </div>
+                        <span class="text-yellow-500 font-mono text-sm">R$ ${parseFloat(v.preco).toFixed(2)}</span>
+                    `;
+                    listaTam.appendChild(div);
+                });
+            } else {
+                areaTam.classList.add('hidden');
+                // Se não tem tamanho, o preço base é o do produto
+                tamanhoSelecionado = { nome: null, preco: prod.preco };
+            }
+
+            // Configurar Adicionais
+            const areaAdd = document.getElementById('area-selecao-adicionais');
+            const listaAdd = document.getElementById('lista-adicionais');
+            listaAdd.innerHTML = '';
+
+            if (prod.adicionais && prod.adicionais.length > 0) {
+                areaAdd.classList.remove('hidden');
+                prod.adicionais.forEach((a, idx) => {
+                    const div = document.createElement('label');
+                    div.className = "flex justify-between items-center bg-zinc-800 p-3 rounded cursor-pointer border border-transparent hover:border-zinc-600 transition";
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" onchange="toggleAdicional(${idx}, this.checked)" class="accent-green-500 w-4 h-4 rounded">
+                            <span class="text-white text-sm">${a.nome}</span>
+                        </div>
+                        <span class="text-green-400 font-mono text-sm">+ R$ ${parseFloat(a.preco).toFixed(2)}</span>
+                    `;
+                    listaAdd.appendChild(div);
+                });
+            } else {
+                areaAdd.classList.add('hidden');
+            }
+
+            atualizarTotalModal();
+            document.getElementById('modal-detalhes').classList.remove('hidden');
+        }
+
+        function fecharModalDetalhes() {
+            document.getElementById('modal-detalhes').classList.add('hidden');
+        }
+
+        function selecionarTamanho(idx) {
+            if(!produtoSelecionadoAtual || !produtoSelecionadoAtual.variacoes) return;
+            tamanhoSelecionado = produtoSelecionadoAtual.variacoes[idx];
+            atualizarTotalModal();
+        }
+
+        function toggleAdicional(idx, checked) {
+            if(!produtoSelecionadoAtual) return;
+            const add = produtoSelecionadoAtual.adicionais[idx];
+            if (checked) {
+                adicionaisSelecionados.push(add);
+            } else {
+                adicionaisSelecionados = adicionaisSelecionados.filter(x => x.nome !== add.nome);
+            }
+            atualizarTotalModal();
+        }
+
+        function atualizarTotalModal() {
+            let total = 0;
+            const btn = document.getElementById('btn-add-modal');
+            
+            // Validação: Se tem variações, PRECISA ter selecionado um tamanho
+            if (produtoSelecionadoAtual.variacoes && produtoSelecionadoAtual.variacoes.length > 0 && !tamanhoSelecionado) {
+                btn.disabled = true;
+                btn.innerText = "Escolha um tamanho";
+                document.getElementById('modal-detalhe-preco').innerText = "---";
+                return;
+            }
+
+            if (tamanhoSelecionado) total += parseFloat(tamanhoSelecionado.preco);
+            adicionaisSelecionados.forEach(a => total += parseFloat(a.preco));
+            
+            document.getElementById('modal-detalhe-preco').innerText = `R$ ${total.toFixed(2)}`;
+            btn.disabled = false;
+            btn.innerText = "Adicionar";
+        }
+
+        function confirmarAdicaoCarrinho() {
+            if(!produtoSelecionadoAtual) return;
+            
+            let precoFinal = parseFloat(tamanhoSelecionado ? tamanhoSelecionado.preco : produtoSelecionadoAtual.preco);
+            adicionaisSelecionados.forEach(a => precoFinal += parseFloat(a.preco));
+            
+            const obs = document.getElementById('modal-detalhe-obs').value;
+
+            const itemCarrinho = {
+                id: produtoSelecionadoAtual.id,
+                nome: produtoSelecionadoAtual.nome,
+                preco: precoFinal,
+                tamanho: tamanhoSelecionado && tamanhoSelecionado.nome ? tamanhoSelecionado.nome : null,
+                adicionais: adicionaisSelecionados,
+                obs: obs,
+                cartId: Date.now() 
+            };
+
+            cart.push(itemCarrinho);
+            updateCartUI();
+            
+            if(window.navigator.vibrate) window.navigator.vibrate(50);
+            fecharModalDetalhes();
         }
 
         function updateCartUI() {
             const totalProdutos = cart.reduce((a,b)=>a+b.preco,0);
             const totalFinal = totalProdutos + (deliveryType === 'delivery' ? taxaEntregaAtual : 0);
-
             document.getElementById('cart-total').innerText = 'R$ ' + totalFinal.toFixed(2);
             document.getElementById('cart-count').innerText = cart.length;
             const bar = document.getElementById('cart-bar');
             cart.length > 0 ? bar.classList.remove('translate-y-full') : bar.classList.add('translate-y-full');
+        }
+
+        function renderCheckoutItems() {
+            document.getElementById('checkout-items').innerHTML = cart.map((item, index) => {
+                let detalhesHtml = '';
+                if(item.tamanho) detalhesHtml += `<span class="text-[10px] bg-zinc-700 px-1 rounded mr-1">${item.tamanho}</span>`;
+                if(item.adicionais && item.adicionais.length > 0) detalhesHtml += `<span class="text-[10px] text-gray-400">+ ${item.adicionais.map(a=>a.nome).join(', ')}</span>`;
+                if(item.obs) detalhesHtml += `<div class="text-[10px] text-yellow-500 italic mt-0.5">Obs: ${item.obs}</div>`;
+
+                return `
+                <div class="flex justify-between bg-zinc-800 p-3 rounded-lg mb-2 border border-zinc-700">
+                    <div class="flex-1">
+                        <div class="text-white text-sm font-bold">${item.nome}</div>
+                        <div class="leading-tight">${detalhesHtml}</div>
+                        <div class="text-yellow-500 font-mono text-xs mt-1">R$ ${item.preco.toFixed(2)}</div>
+                    </div>
+                    <button onclick="event.stopPropagation(); cart.splice(${index},1);updateCartUI();renderCheckoutItems()" class="text-red-400 hover:text-red-300 p-2 self-center">
+                        <i class="fa-solid fa-trash text-sm"></i>
+                    </button>
+                </div>`;
+            }).join('');
+            
+            if(cart.length === 0) closeCheckout();
         }
 
         async function processarPedido() {
@@ -375,25 +566,13 @@
 
         function openCheckout() { document.getElementById('modal-checkout').classList.remove('hidden'); renderCheckoutItems(); }
         function closeCheckout() { document.getElementById('modal-checkout').classList.add('hidden'); }
-        function renderCheckoutItems() {
-            document.getElementById('checkout-items').innerHTML = cart.map((p,i) => 
-                `<div class="flex justify-between bg-zinc-800 p-2 rounded items-center mb-2"><span class="text-white text-sm">${p.nome}</span><button onclick="event.stopPropagation(); cart.splice(${i},1);updateCartUI();renderCheckoutItems()" class="text-red-400 p-2"><i class="fa-solid fa-trash text-xs"></i></button></div>`
-            ).join('');
-            if(cart.length === 0) closeCheckout();
-        }
-
         function setDeliveryType(t) {
             deliveryType = t;
             document.getElementById('area-mesa').classList.toggle('hidden', t !== 'mesa');
             document.getElementById('area-delivery').classList.toggle('hidden', t !== 'delivery');
             document.getElementById('btn-mesa').className = t==='mesa' ? "p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 text-sm" : "p-2 rounded border border-zinc-700 text-gray-400 text-sm";
             document.getElementById('btn-delivery').className = t==='delivery' ? "p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 text-sm" : "p-2 rounded border border-zinc-700 text-gray-400 text-sm";
-            
-            if (t === 'mesa') {
-                taxaEntregaAtual = 0;
-            } else {
-                atualizarTaxaEntrega();
-            }
+            if (t === 'mesa') { taxaEntregaAtual = 0; } else { atualizarTaxaEntrega(); }
             updateCartUI();
         }
 
