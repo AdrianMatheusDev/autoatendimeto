@@ -76,6 +76,23 @@
                     <div id="lista-tamanhos" class="space-y-2"></div>
                 </div>
 
+                <div id="area-segundo-sabor" class="mb-6 hidden bg-zinc-800/50 p-3 rounded border border-dashed border-zinc-700">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-xs font-bold text-yellow-500 uppercase"><i class="fa-solid fa-pizza-slice mr-1"></i> 2º Sabor (Meio a Meio)</h3>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <span class="text-[10px] text-gray-400">Ativar</span>
+                            <input type="checkbox" id="check-meio-a-meio" onchange="toggleSegundoSabor()" class="accent-yellow-500 w-4 h-4">
+                        </label>
+                    </div>
+                    
+                    <div id="container-select-sabor" class="hidden">
+                        <p class="text-[10px] text-gray-400 mb-2">O valor final será o do sabor de maior preço.</p>
+                        <select id="select-segundo-sabor" onchange="calcularPrecoPizza()" class="w-full bg-zinc-900 border border-zinc-700 rounded p-2 text-white text-sm outline-none focus:border-yellow-500">
+                            <option value="">Selecione o 2º sabor...</option>
+                        </select>
+                    </div>
+                </div>
+
                 <div id="area-selecao-adicionais" class="mb-6 hidden">
                     <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Adicionais</h3>
                     <div id="lista-adicionais" class="space-y-2"></div>
@@ -207,6 +224,7 @@
         let produtoSelecionadoAtual = null;
         let tamanhoSelecionado = null;
         let adicionaisSelecionados = [];
+        let segundoSaborSelecionado = null; // Novo para pizza
 
         document.addEventListener('DOMContentLoaded', async () => {
             await carregarLoja();
@@ -328,8 +346,8 @@
             produtoSelecionadoAtual = prod;
             tamanhoSelecionado = null;
             adicionaisSelecionados = [];
+            segundoSaborSelecionado = null;
 
-            // Preencher Infos Básicas
             document.getElementById('modal-detalhe-nome').innerText = prod.nome;
             document.getElementById('modal-detalhe-desc').innerText = prod.descricao || '';
             const imgArea = document.getElementById('modal-detalhe-img-area');
@@ -341,7 +359,7 @@
             }
             document.getElementById('modal-detalhe-obs').value = '';
 
-            // Configurar Tamanhos
+            // Tamanhos
             const areaTam = document.getElementById('area-selecao-tamanho');
             const listaTam = document.getElementById('lista-tamanhos');
             listaTam.innerHTML = '';
@@ -362,11 +380,37 @@
                 });
             } else {
                 areaTam.classList.add('hidden');
-                // Se não tem tamanho, o preço base é o do produto
                 tamanhoSelecionado = { nome: null, preco: prod.preco };
             }
 
-            // Configurar Adicionais
+            // PIZZA MEIO A MEIO
+            const areaPizza = document.getElementById('area-segundo-sabor');
+            const checkPizza = document.getElementById('check-meio-a-meio');
+            const selectPizza = document.getElementById('select-segundo-sabor');
+            
+            if(prod.categoria.toLowerCase().includes('pizza')) {
+                areaPizza.classList.remove('hidden');
+                checkPizza.checked = false;
+                document.getElementById('container-select-sabor').classList.add('hidden');
+                
+                selectPizza.innerHTML = '<option value="">Selecione o 2º sabor...</option>';
+                const outrasPizzas = produtosCache.filter(p => 
+                    p.categoria === prod.categoria && 
+                    p.id !== prod.id && 
+                    p.disponivel
+                );
+                
+                outrasPizzas.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.text = p.nome;
+                    selectPizza.appendChild(opt);
+                });
+            } else {
+                areaPizza.classList.add('hidden');
+            }
+
+            // Adicionais
             const areaAdd = document.getElementById('area-selecao-adicionais');
             const listaAdd = document.getElementById('lista-adicionais');
             listaAdd.innerHTML = '';
@@ -414,11 +458,33 @@
             atualizarTotalModal();
         }
 
+        function toggleSegundoSabor() {
+            const check = document.getElementById('check-meio-a-meio');
+            const container = document.getElementById('container-select-sabor');
+            const select = document.getElementById('select-segundo-sabor');
+            
+            if(check.checked) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+                select.value = "";
+                segundoSaborSelecionado = null;
+            }
+            atualizarTotalModal();
+        }
+
+        function calcularPrecoPizza() {
+            const select = document.getElementById('select-segundo-sabor');
+            const idSabor2 = select.value;
+            if(!idSabor2) { segundoSaborSelecionado = null; } 
+            else { segundoSaborSelecionado = produtosCache.find(p => p.id == idSabor2); }
+            atualizarTotalModal();
+        }
+
         function atualizarTotalModal() {
             let total = 0;
             const btn = document.getElementById('btn-add-modal');
             
-            // Validação: Se tem variações, PRECISA ter selecionado um tamanho
             if (produtoSelecionadoAtual.variacoes && produtoSelecionadoAtual.variacoes.length > 0 && !tamanhoSelecionado) {
                 btn.disabled = true;
                 btn.innerText = "Escolha um tamanho";
@@ -426,7 +492,27 @@
                 return;
             }
 
-            if (tamanhoSelecionado) total += parseFloat(tamanhoSelecionado.preco);
+            let precoBase = 0;
+            
+            if (tamanhoSelecionado) {
+                let preco1 = parseFloat(tamanhoSelecionado.preco);
+                if (segundoSaborSelecionado) {
+                    // Tenta achar o MESMO tamanho na Pizza 2
+                    const variacaoSabor2 = segundoSaborSelecionado.variacoes.find(v => v.nome === tamanhoSelecionado.nome);
+                    if (variacaoSabor2) {
+                        let preco2 = parseFloat(variacaoSabor2.preco);
+                        precoBase = Math.max(preco1, preco2);
+                    } else {
+                        precoBase = preco1; 
+                    }
+                } else {
+                    precoBase = preco1;
+                }
+            } else {
+                precoBase = parseFloat(produtoSelecionadoAtual.preco);
+            }
+
+            total += precoBase;
             adicionaisSelecionados.forEach(a => total += parseFloat(a.preco));
             
             document.getElementById('modal-detalhe-preco').innerText = `R$ ${total.toFixed(2)}`;
@@ -437,14 +523,33 @@
         function confirmarAdicaoCarrinho() {
             if(!produtoSelecionadoAtual) return;
             
-            let precoFinal = parseFloat(tamanhoSelecionado ? tamanhoSelecionado.preco : produtoSelecionadoAtual.preco);
-            adicionaisSelecionados.forEach(a => precoFinal += parseFloat(a.preco));
+            // Recalcula para garantir
+            let precoFinal = 0;
             
+            if (tamanhoSelecionado) {
+                let p1 = parseFloat(tamanhoSelecionado.preco);
+                if(segundoSaborSelecionado) {
+                    const v2 = segundoSaborSelecionado.variacoes.find(v => v.nome === tamanhoSelecionado.nome);
+                    let p2 = v2 ? parseFloat(v2.preco) : p1;
+                    precoFinal = Math.max(p1, p2);
+                } else {
+                    precoFinal = p1;
+                }
+            } else {
+                precoFinal = parseFloat(produtoSelecionadoAtual.preco);
+            }
+            
+            adicionaisSelecionados.forEach(a => precoFinal += parseFloat(a.preco));
             const obs = document.getElementById('modal-detalhe-obs').value;
+
+            let nomeFinal = produtoSelecionadoAtual.nome;
+            if(segundoSaborSelecionado) {
+                nomeFinal = `½ ${produtoSelecionadoAtual.nome} / ½ ${segundoSaborSelecionado.nome}`;
+            }
 
             const itemCarrinho = {
                 id: produtoSelecionadoAtual.id,
-                nome: produtoSelecionadoAtual.nome,
+                nome: nomeFinal,
                 preco: precoFinal,
                 tamanho: tamanhoSelecionado && tamanhoSelecionado.nome ? tamanhoSelecionado.nome : null,
                 adicionais: adicionaisSelecionados,
