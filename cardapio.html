@@ -102,23 +102,19 @@
                     <div id="lista-adicionais" class="space-y-2"></div>
                 </div>
 
-                <div>
+                 <div>
                     <h3 class="text-xs font-bold text-gray-500 uppercase mb-2">Observação</h3>
                     <textarea id="modal-detalhe-obs" placeholder="Ex: Sem cebola, capricha no molho..." class="w-full bg-zinc-800 border border-zinc-700 rounded p-3 text-white text-sm outline-none focus:border-yellow-500" rows="2"></textarea>
                 </div>
             </div>
 
             <div class="p-4 bg-zinc-950 border-t border-zinc-800 shrink-0 flex flex-col gap-3">
-                
                 <div class="flex justify-between items-center">
                     <span class="text-zinc-400 text-sm font-medium">Total do Item:</span>
                     <div class="text-white font-bold text-xl" id="modal-detalhe-preco">R$ 0,00</div>
                 </div>
-
                 <div class="flex gap-3">
-                    <button onclick="fecharModalDetalhes()" class="flex-1 py-3 rounded-lg border border-zinc-700 text-zinc-300 font-bold hover:bg-zinc-800 transition">
-                        Cancelar
-                    </button>
+                    <button onclick="fecharModalDetalhes()" class="flex-1 py-3 rounded-lg border border-zinc-700 text-zinc-300 font-bold hover:bg-zinc-800 transition">Cancelar</button>
                     <button onclick="confirmarAdicaoCarrinho()" class="flex-[2] bg-yellow-500 hover:bg-yellow-400 text-black font-bold py-3 rounded-lg shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" id="btn-add-modal">
                         <span>Adicionar</span> <i class="fa-solid fa-cart-plus"></i>
                     </button>
@@ -205,9 +201,15 @@
                     <hr class="border-zinc-800">
 
                     <label class="block text-[10px] font-bold text-gray-400 uppercase">Pagamento</label>
-                    <div class="grid grid-cols-2 gap-3">
-                        <label class="payment-option cursor-pointer"><input type="radio" name="pagamento" value="pix" checked class="hidden"><div class="border border-zinc-700 rounded-lg p-2 text-center text-white text-xs font-bold">Pix</div></label>
-                        <label class="payment-option cursor-pointer"><input type="radio" name="pagamento" value="cartao" class="hidden"><div class="border border-zinc-700 rounded-lg p-2 text-center text-white text-xs font-bold">Cartão</div></label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <label class="payment-option cursor-pointer"><input type="radio" name="pagamento" value="pix" checked class="hidden" onchange="toggleTroco(false)"><div class="border border-zinc-700 rounded-lg p-2 text-center text-white text-xs font-bold">Pix</div></label>
+                        <label class="payment-option cursor-pointer"><input type="radio" name="pagamento" value="cartao" class="hidden" onchange="toggleTroco(false)"><div class="border border-zinc-700 rounded-lg p-2 text-center text-white text-xs font-bold">Cartão</div></label>
+                        <label class="payment-option cursor-pointer"><input type="radio" name="pagamento" value="dinheiro" class="hidden" onchange="toggleTroco(true)"><div class="border border-zinc-700 rounded-lg p-2 text-center text-white text-xs font-bold">Dinheiro</div></label>
+                    </div>
+                    
+                    <div id="area-troco" class="hidden mt-2 bg-zinc-800/50 p-3 rounded border border-dashed border-zinc-700">
+                        <label class="block text-[10px] font-bold text-yellow-500 uppercase mb-1">Troco para quanto?</label>
+                        <input type="number" id="input-troco" class="w-full bg-zinc-950 border border-zinc-700 rounded p-2 text-white outline-none focus:border-yellow-500 text-sm font-mono" placeholder="Ex: 50.00">
                     </div>
                 </div>
             </div>
@@ -610,12 +612,26 @@
             if(cart.length === 0) closeCheckout();
         }
 
+        // --- FUNÇÃO NOVA: Mostrar/Esconder campo de Troco ---
+        function toggleTroco(show) {
+            const area = document.getElementById('area-troco');
+            const input = document.getElementById('input-troco');
+            if(show) {
+                area.classList.remove('hidden');
+            } else {
+                area.classList.add('hidden');
+                input.value = ''; // Limpa o valor se trocar para Pix/Cartão
+            }
+        }
+
         async function processarPedido() {
             if (cart.length === 0) return;
             const nome = document.getElementById('input-nome').value;
             const telefone = document.getElementById('input-tel').value;
             const mesa = document.getElementById('input-mesa').value;
-            const metodoPagamento = document.querySelector('input[name="pagamento"]:checked').value;
+            // Pega o valor do radio selecionado
+            const radioPagamento = document.querySelector('input[name="pagamento"]:checked');
+            const metodoPagamento = radioPagamento ? radioPagamento.value : 'pix';
 
             if (!nome) return alert('Informe seu nome.');
             if (!telefone) return alert('Informe seu WhatsApp para avisarmos sobre o pedido.');
@@ -642,6 +658,19 @@
                 taxaAplicada = 0;
             }
 
+            // --- LÓGICA DE PAGAMENTO E TROCO ATUALIZADA ---
+            let stringPagamento = metodoPagamento === 'cartao' ? 'Cartão' : 'Pix';
+            
+            if (metodoPagamento === 'dinheiro') {
+                const valorTroco = document.getElementById('input-troco').value;
+                if (!valorTroco) {
+                    if(!confirm('Você selecionou Dinheiro mas não informou para quanto é o troco. O entregador não levará troco. Deseja continuar?')) return;
+                    stringPagamento = 'Dinheiro (Sem troco)';
+                } else {
+                    stringPagamento = `Dinheiro (Troco p/ R$ ${valorTroco})`;
+                }
+            }
+
             const btn = document.getElementById('btn-confirmar');
             btn.disabled = true; btn.innerText = "Enviando...";
 
@@ -660,7 +689,7 @@
                     total: totalComTaxa, 
                     status: 'pendente',
                     status_pagamento: 'pendente',
-                    metodo_pagamento: metodoPagamento
+                    metodo_pagamento: stringPagamento // Envia a string formatada
                 });
 
                 if (error) throw error;
