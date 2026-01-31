@@ -31,7 +31,6 @@
             background-color: #27272a !important;
         }
         
-        /* Garante que o rodapé do modal não fique colado na barra de gesto do iPhone */
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
     </style>
 </head>
@@ -47,11 +46,11 @@
                 <span class="text-xs text-zinc-500 uppercase tracking-widest">Painel Administrativo</span>
             </div>
         </div>
-        <nav class="flex bg-zinc-900 p-1 rounded-lg border border-zinc-800">
-            <button onclick="switchTab('pedidos')" id="nav-pedidos" class="nav-btn px-4 py-2 rounded text-sm font-medium transition-all text-white bg-zinc-800 shadow">Cozinha</button>
-            <button onclick="switchTab('historico')" id="nav-historico" class="nav-btn px-4 py-2 rounded text-sm font-medium transition-all text-zinc-400 hover:text-white">Histórico</button>
-            <button onclick="switchTab('cardapio')" id="nav-cardapio" class="nav-btn px-4 py-2 rounded text-sm font-medium transition-all text-zinc-400 hover:text-white">Cardápio</button>
-            <button onclick="switchTab('config')" id="nav-config" class="nav-btn px-4 py-2 rounded text-sm font-medium transition-all text-zinc-400 hover:text-white">Configurações</button>
+        <nav class="flex bg-zinc-900 p-1 rounded-lg border border-zinc-800 overflow-x-auto hide-scrollbar">
+            <button onclick="switchTab('pedidos')" id="nav-pedidos" class="nav-btn px-4 py-2 rounded text-sm font-medium transition-all text-white bg-zinc-800 shadow whitespace-nowrap">Cozinha</button>
+            <button onclick="switchTab('historico')" id="nav-historico" class="nav-btn px-4 py-2 rounded text-sm font-medium transition-all text-zinc-400 hover:text-white whitespace-nowrap">Histórico</button>
+            <button onclick="switchTab('cardapio')" id="nav-cardapio" class="nav-btn px-4 py-2 rounded text-sm font-medium transition-all text-zinc-400 hover:text-white whitespace-nowrap">Cardápio</button>
+            <button onclick="switchTab('config')" id="nav-config" class="nav-btn px-4 py-2 rounded text-sm font-medium transition-all text-zinc-400 hover:text-white whitespace-nowrap">Config</button>
         </nav>
     </header>
 
@@ -90,24 +89,24 @@
                     <p class="text-sm text-zinc-400">Consulte pedidos finalizados por data</p>
                 </div>
                 
-                <div class="flex items-end gap-4 bg-zinc-900 p-3 rounded-xl border border-zinc-800">
+                <div class="flex items-end gap-4 bg-zinc-900 p-3 rounded-xl border border-zinc-800 overflow-x-auto">
                     <div>
                         <label class="block text-xs text-zinc-500 uppercase font-bold mb-1">Filtrar Data</label>
                         <input type="date" id="hist-date" onchange="carregarHistorico()" class="bg-zinc-950 border border-zinc-700 text-white rounded p-2 text-sm focus:border-yellow-500 outline-none transition">
                     </div>
-                    <div class="text-right px-4 border-l border-zinc-700">
+                    <div class="text-right px-4 border-l border-zinc-700 min-w-fit">
                         <div class="text-xs text-zinc-500 uppercase font-bold">Faturamento</div>
                         <div id="hist-total" class="text-xl font-bold text-yellow-500 font-mono">R$ 0,00</div>
                     </div>
-                    <div class="text-right px-4 border-l border-zinc-700">
+                    <div class="text-right px-4 border-l border-zinc-700 min-w-fit">
                         <div class="text-xs text-zinc-500 uppercase font-bold">Total Pedidos</div>
                         <div id="hist-count" class="text-xl font-bold text-white">0</div>
                     </div>
                 </div>
             </div>
 
-            <div class="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50 shadow-xl">
-                <table class="w-full text-left text-sm text-zinc-400">
+            <div class="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/50 shadow-xl">
+                <table class="w-full text-left text-sm text-zinc-400 whitespace-nowrap">
                     <thead class="bg-zinc-900 text-xs uppercase text-zinc-500 font-bold tracking-wider">
                         <tr>
                             <th class="p-4">Hora</th>
@@ -124,24 +123,25 @@
         </div>
 
         <div id="tab-cardapio" class="tab-content">
-            <div class="flex justify-between items-center mb-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
                     <h2 class="text-2xl font-bold text-white">Seus Produtos</h2>
                     <p class="text-sm text-zinc-400">Arraste os itens para reorganizar a ordem no cardápio</p>
                 </div>
-                <button onclick="abrirModalProduto()" class="bg-yellow-500 hover:bg-yellow-400 text-black px-4 py-2 rounded font-bold transition shadow-lg shadow-yellow-500/20 flex items-center gap-2">
+                <button onclick="abrirModalProduto()" class="bg-yellow-500 hover:bg-yellow-400 text-black px-4 py-2 rounded font-bold transition shadow-lg shadow-yellow-500/20 flex items-center gap-2 w-full sm:w-auto justify-center">
                     <i class="fa-solid fa-plus"></i> Novo Produto
                 </button>
             </div>
 
-            <div class="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50 shadow-xl">
+            <div class="overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-900/50 shadow-xl">
                 <table class="w-full text-left text-sm text-zinc-400">
                     <thead class="bg-zinc-900 text-xs uppercase text-zinc-500 font-bold tracking-wider">
                         <tr>
-                            <th class="p-4 w-10"></th> <th class="p-4">Produto</th>
-                            <th class="p-4">Preço</th>
-                            <th class="p-4">Status</th>
-                            <th class="p-4 text-right">Ações</th>
+                            <th class="p-3 sm:p-4 w-10"></th> 
+                            <th class="p-3 sm:p-4">Produto</th>
+                            <th class="p-3 sm:p-4">Preço</th>
+                            <th class="p-3 sm:p-4">Status</th>
+                            <th class="p-3 sm:p-4 text-right">Ações</th>
                         </tr>
                     </thead>
                     <tbody id="lista-produtos" class="divide-y divide-zinc-800/50">
@@ -257,9 +257,9 @@
                                 <input type="checkbox" id="check-tem-tamanhos" onchange="toggleAreaTamanhos()" class="w-4 h-4 accent-yellow-500">
                                 <span class="text-sm font-bold text-white uppercase">Habilitar Tamanhos (P, M, G...)</span>
                             </label>
-                            <button onclick="addTamanhoRow()" id="btn-add-tam" class="hidden text-xs bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-1 rounded border border-zinc-700"><i class="fa-solid fa-plus"></i> Add Tamanho</button>
+                            <button onclick="addTamanhoRow()" id="btn-add-tam" class="hidden text-xs bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-1 rounded border border-zinc-700"><i class="fa-solid fa-plus"></i> Add</button>
                         </div>
-                        <div id="area-tamanhos" class="hidden space-y-2 bg-zinc-950/50 p-3 rounded border border-zinc-800">
+                        <div id="area-tamanhos" class="hidden space-y-2 bg-zinc-950/50 p-2 sm:p-3 rounded border border-zinc-800">
                             <p class="text-xs text-zinc-500 italic text-center" id="msg-sem-tam">Nenhum tamanho configurado.</p>
                             </div>
                     </div>
@@ -267,9 +267,9 @@
                     <div>
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-sm font-bold text-white uppercase">Adicionais Opcionais</span>
-                            <button onclick="addAdicionalRow()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-1 rounded border border-zinc-700"><i class="fa-solid fa-plus"></i> Add Adicional</button>
+                            <button onclick="addAdicionalRow()" class="text-xs bg-zinc-800 hover:bg-zinc-700 text-white px-2 py-1 rounded border border-zinc-700"><i class="fa-solid fa-plus"></i> Add</button>
                         </div>
-                        <div id="area-adicionais" class="space-y-2 bg-zinc-950/50 p-3 rounded border border-zinc-800">
+                        <div id="area-adicionais" class="space-y-2 bg-zinc-950/50 p-2 sm:p-3 rounded border border-zinc-800">
                             </div>
                     </div>
                 </div>
@@ -277,7 +277,7 @@
                 <div class="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-zinc-800">
                     <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-800 flex items-center gap-3">
                         <input type="checkbox" id="prod-promo" class="w-5 h-5 accent-yellow-500 cursor-pointer">
-                        <label for="prod-promo" class="text-xs font-bold text-white uppercase cursor-pointer">Mostrar Promo</label>
+                        <label for="prod-promo" class="text-xs font-bold text-white uppercase cursor-pointer">Promoção</label>
                     </div>
                     <div class="bg-zinc-950 p-3 rounded-lg border border-zinc-800 flex items-center gap-3">
                         <input type="checkbox" id="prod-disponivel" checked class="w-5 h-5 accent-green-500 cursor-pointer">
@@ -317,9 +317,9 @@
             if(target) target.classList.add('active');
             
             document.querySelectorAll('.nav-btn').forEach(b => {
-                b.className = "nav-btn px-4 py-2 rounded text-sm font-medium transition-all text-zinc-400 hover:text-white hover:bg-zinc-800/50";
+                b.className = "nav-btn px-4 py-2 rounded text-sm font-medium transition-all text-zinc-400 hover:text-white hover:bg-zinc-800/50 whitespace-nowrap";
             });
-            document.getElementById('nav-' + tab).className = "nav-btn px-4 py-2 rounded text-sm font-medium transition-all text-white bg-zinc-800 shadow border border-zinc-700";
+            document.getElementById('nav-' + tab).className = "nav-btn px-4 py-2 rounded text-sm font-medium transition-all text-white bg-zinc-800 shadow border border-zinc-700 whitespace-nowrap";
 
             if (tab === 'cardapio') listarProdutos();
             if (tab === 'pedidos') { carregarPedidos(); carregarFaturamentoDiario(); }
@@ -478,14 +478,19 @@
                 const tbody = document.getElementById('lista-produtos');
                 tbody.innerHTML = (data || []).map(p => `
                     <tr class="hover:bg-zinc-800/30 transition border-b border-zinc-800 item-produto" data-id="${p.id}">
-                        <td class="p-4 cursor-grab text-zinc-600 hover:text-white handle-reorder"><i class="fa-solid fa-grip-vertical"></i></td>
-                        <td class="p-4 flex items-center gap-3">
-                            <img src="${p.imagem_url || 'https://via.placeholder.com/40'}" class="w-10 h-10 rounded object-cover">
-                            <div><div class="font-bold text-white text-sm">${p.nome}</div><div class="text-xs text-zinc-500">${p.categoria}</div></div>
+                        <td class="p-3 sm:p-4 cursor-grab text-zinc-600 hover:text-white handle-reorder"><i class="fa-solid fa-grip-vertical"></i></td>
+                        <td class="p-3 sm:p-4 flex items-center gap-3">
+                            <img src="${p.imagem_url || 'https://via.placeholder.com/40'}" class="w-8 h-8 sm:w-10 sm:h-10 rounded object-cover">
+                            <div><div class="font-bold text-white text-xs sm:text-sm">${p.nome}</div><div class="text-[10px] sm:text-xs text-zinc-500">${p.categoria}</div></div>
                         </td>
-                        <td class="p-4 text-yellow-500 text-sm font-mono">${(p.variacoes && p.variacoes.length > 0) ? 'Var.' : 'R$ ' + parseFloat(p.preco).toFixed(2)}</td>
-                        <td class="p-4"><button onclick="toggleProd('${p.id}', 'disponivel', ${!p.disponivel})" class="px-2 py-1 rounded text-xs font-bold ${p.disponivel ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}">${p.disponivel ? 'Ativo' : 'Esgotado'}</button></td>
-                        <td class="p-4 text-right"><div class="flex justify-end gap-2"><button onclick='editarProduto(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="text-blue-400 hover:text-white w-8 h-8 rounded bg-blue-900/20 flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button><button onclick="deletarProduto('${p.id}')" class="text-red-400 hover:text-white w-8 h-8 rounded bg-red-900/20 flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button></div></td>
+                        <td class="p-3 sm:p-4 text-yellow-500 text-xs sm:text-sm font-mono">${(p.variacoes && p.variacoes.length > 0) ? 'Var.' : 'R$ ' + parseFloat(p.preco).toFixed(2)}</td>
+                        <td class="p-3 sm:p-4"><button onclick="toggleProd('${p.id}', 'disponivel', ${!p.disponivel})" class="px-2 py-1 rounded text-xs font-bold ${p.disponivel ? 'bg-green-900 text-green-400' : 'bg-red-900 text-red-400'}">${p.disponivel ? 'Ativo' : 'Esgotado'}</button></td>
+                        <td class="p-3 sm:p-4 text-right whitespace-nowrap">
+                            <div class="flex justify-end gap-2">
+                                <button onclick='editarProduto(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="text-blue-400 hover:text-white w-8 h-8 rounded bg-blue-900/20 flex items-center justify-center"><i class="fa-solid fa-pen text-xs"></i></button>
+                                <button onclick="deletarProduto('${p.id}')" class="text-red-400 hover:text-white w-8 h-8 rounded bg-red-900/20 flex items-center justify-center"><i class="fa-solid fa-trash text-xs"></i></button>
+                            </div>
+                        </td>
                     </tr>`).join('');
                 configurarArrastar();
             } catch (e) { console.error(e); }
