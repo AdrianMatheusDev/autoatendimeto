@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Admin - Black Piano System</title>
+    <title>Super Admin - A'M Systems</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #09090b; color: #f4f4f5; }
@@ -15,13 +16,8 @@
         ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
         
         #login-overlay {
-            position: fixed;
-            inset: 0;
-            background: #09090b;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: fixed; inset: 0; background: #09090b; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
         }
     </style>
 </head>
@@ -33,25 +29,19 @@
                 <i class="fa-solid fa-crown"></i>
             </div>
             <h2 class="text-2xl font-black mb-2 uppercase tracking-tighter">Master Access</h2>
-            <p class="text-zinc-500 text-sm mb-6">Controle Central Black Piano</p>
-            
-            <input type="password" id="pass-input" required
-                class="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl outline-none focus:border-yellow-500 transition text-center text-xl tracking-[0.3em] text-white" 
-                placeholder="SENHA">
-            
-            <button type="submit" class="w-full bg-yellow-500 text-black font-black py-4 rounded-xl mt-4 hover:bg-yellow-400 transition active:scale-95 shadow-lg">
-                ENTRAR NO SISTEMA
-            </button>
-            <p id="login-error" class="text-red-500 text-xs mt-4 font-bold hidden italic">Senha incorreta. Verifique e tente novamente.</p>
+            <p class="text-zinc-500 text-sm mb-6">Controle Central A'M Systems</p>
+            <input type="password" id="pass-input" required class="w-full bg-zinc-950 border border-zinc-800 p-4 rounded-xl outline-none focus:border-yellow-500 transition text-center text-xl tracking-[0.3em] text-white" placeholder="SENHA">
+            <button type="submit" class="w-full bg-yellow-500 text-black font-black py-4 rounded-xl mt-4 hover:bg-yellow-400 transition active:scale-95 shadow-lg">ENTRAR</button>
+            <p id="login-error" class="text-red-500 text-xs mt-4 font-bold hidden italic">Senha incorreta.</p>
         </form>
     </div>
 
     <div id="master-content" class="hidden p-4 md:p-8">
-        <div class="max-w-6xl mx-auto">
-            <header class="flex justify-between items-center mb-8 border-b border-zinc-800 pb-6">
+        <div class="max-w-[1400px] mx-auto">
+            <header class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-zinc-800 pb-6 gap-4">
                 <div>
                     <h1 class="text-3xl font-black text-white tracking-tighter uppercase">Master <span class="text-yellow-500">Admin</span></h1>
-                    <p class="text-zinc-500 text-sm">Gerenciamento de todos os estabelecimentos</p>
+                    <p class="text-zinc-500 text-sm">Gerenciamento de Tenants (Clientes)</p>
                 </div>
                 <div class="flex gap-4 items-center">
                     <button onclick="fazerLogout()" class="text-zinc-500 hover:text-red-500 text-xs font-bold uppercase transition">Sair</button>
@@ -61,35 +51,47 @@
                 </div>
             </header>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-                <div class="glass p-6 rounded-2xl">
-                    <p class="text-zinc-500 text-xs font-bold uppercase tracking-widest">Total de Lojas</p>
-                    <h2 id="stat-lojas" class="text-4xl font-black mt-1">0</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                <div class="glass p-6 rounded-2xl border-t-4 border-green-500 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><i class="fa-solid fa-sack-dollar text-6xl text-green-500"></i></div>
+                    <p class="text-zinc-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2"><i class="fa-solid fa-calendar-day text-green-500"></i> Vendas Hoje</p>
+                    <h2 id="stat-vendas-hoje" class="text-3xl font-black mt-2 text-white font-mono">R$ 0,00</h2>
+                    <p class="text-[10px] text-zinc-500 mt-1">Total de pedidos processados</p>
                 </div>
-                <div class="glass p-6 rounded-2xl">
-                    <p class="text-zinc-500 text-xs font-bold uppercase tracking-widest">Lojas Online</p>
-                    <h2 id="stat-abertas" class="text-4xl font-black mt-1 text-green-500">0</h2>
+                <div class="glass p-6 rounded-2xl border-t-4 border-blue-500 relative overflow-hidden group">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition"><i class="fa-solid fa-store text-6xl text-blue-500"></i></div>
+                    <p class="text-zinc-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2"><i class="fa-solid fa-check-circle text-blue-500"></i> Clientes Ativos</p>
+                    <h2 id="stat-ativas" class="text-4xl font-black mt-1 text-white">0</h2>
+                    <p class="text-[10px] text-zinc-500 mt-1">Lojas pagantes desbloqueadas</p>
                 </div>
-                <div class="glass p-6 rounded-2xl border-yellow-500/30">
-                    <p class="text-zinc-500 text-xs font-bold uppercase tracking-widest">Status Geral</p>
-                    <h2 class="text-xl font-black mt-3 text-yellow-500 flex items-center gap-2 font-mono">
-                        <span class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></span> OPERACIONAL
-                    </h2>
+                <div class="glass p-6 rounded-2xl border-t-4 border-red-500">
+                    <p class="text-zinc-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2"><i class="fa-solid fa-ban text-red-500"></i> Bloqueadas</p>
+                    <h2 id="stat-bloqueadas" class="text-4xl font-black mt-1 text-white">0</h2>
+                    <p class="text-[10px] text-zinc-500 mt-1">Inadimplentes (Kill Switch)</p>
+                </div>
+                <div class="glass p-6 rounded-2xl border-t-4 border-zinc-500" id="card-status-sistema">
+                    <p class="text-zinc-400 text-xs font-bold uppercase tracking-widest flex items-center gap-2"><i class="fa-solid fa-server"></i> Latência / Status</p>
+                    <div class="flex items-center gap-3 mt-2">
+                        <div id="ping-indicator" class="w-4 h-4 rounded-full bg-zinc-600"></div>
+                        <h2 id="stat-ping" class="text-2xl font-black text-white font-mono">...ms</h2>
+                    </div>
+                    <p id="stat-status-text" class="text-[10px] text-zinc-500 mt-1">Verificando...</p>
                 </div>
             </div>
 
-            <div class="glass rounded-2xl overflow-hidden shadow-2xl">
-                <table class="w-full text-left border-collapse">
+            <div class="glass rounded-2xl overflow-hidden shadow-2xl overflow-x-auto">
+                <table class="w-full text-left border-collapse whitespace-nowrap">
                     <thead>
                         <tr class="bg-zinc-900/50 border-b border-zinc-800">
-                            <th class="p-4 text-xs font-bold text-zinc-400 uppercase">Restaurante</th>
-                            <th class="p-4 text-xs font-bold text-zinc-400 uppercase">Slug Único</th>
-                            <th class="p-4 text-xs font-bold text-zinc-400 uppercase">Estado</th>
+                            <th class="p-4 text-xs font-bold text-zinc-400 uppercase">Cliente</th>
+                            <th class="p-4 text-xs font-bold text-zinc-400 uppercase">Slug / Contato</th>
+                            <th class="p-4 text-xs font-bold text-zinc-400 uppercase text-center">Status Loja</th>
+                            <th class="p-4 text-xs font-bold text-zinc-400 uppercase text-center">Kill Switch</th> 
                             <th class="p-4 text-xs font-bold text-zinc-400 uppercase text-right">Ações Rápidas</th>
                         </tr>
                     </thead>
                     <tbody id="lista-restaurantes" class="divide-y divide-zinc-800">
-                        <tr><td colspan="4" class="p-8 text-center text-zinc-600 animate-pulse">Carregando restaurantes...</td></tr>
+                        <tr><td colspan="5" class="p-8 text-center text-zinc-600 animate-pulse">Carregando base de dados...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -99,109 +101,280 @@
     <div id="modal-novo" class="fixed inset-0 bg-black/95 hidden flex items-center justify-center p-4 z-[10000]">
         <div class="bg-zinc-900 w-full max-w-md rounded-3xl border border-zinc-700 shadow-2xl overflow-hidden">
             <div class="p-6 border-b border-zinc-800 flex justify-between items-center bg-zinc-950/50">
-                <h3 class="text-xl font-bold text-white">Novo Restaurante</h3>
+                <h3 class="text-xl font-bold text-white">Novo Cliente SaaS</h3>
                 <button onclick="fecharModal()" class="text-zinc-500 hover:text-white transition"><i class="fa-solid fa-times text-xl"></i></button>
             </div>
             <div class="p-6 space-y-4">
                 <div>
-                    <label class="text-xs font-bold text-zinc-500 uppercase mb-1 block">Nome da Empresa</label>
-                    <input type="text" id="new-nome" oninput="gerarSlugAuto()" 
-                        class="w-full bg-zinc-950 border border-zinc-700 p-3 rounded-xl text-white outline-none focus:border-yellow-500 transition">
+                    <label class="text-xs font-bold text-zinc-500 uppercase mb-1 block">Nome do Estabelecimento</label>
+                    <input type="text" id="new-nome" oninput="gerarSlugAuto()" class="w-full bg-zinc-950 border border-zinc-700 p-3 rounded-xl text-white outline-none focus:border-yellow-500 transition">
                 </div>
                 <div>
-                    <label class="text-xs font-bold text-zinc-500 uppercase mb-1 block">Slug (Identificador na URL)</label>
-                    <input type="text" id="new-slug" readonly
-                        class="w-full bg-zinc-800 border border-zinc-700 p-3 rounded-xl text-zinc-500 outline-none cursor-not-allowed">
+                    <label class="text-xs font-bold text-zinc-500 uppercase mb-1 block">Slug (Link do Cardápio)</label>
+                    <input type="text" id="new-slug" readonly class="w-full bg-zinc-800 border border-zinc-700 p-3 rounded-xl text-zinc-500 outline-none cursor-not-allowed">
+                </div>
+                <div>
+                    <label class="text-xs font-bold text-zinc-500 uppercase mb-1 block">WhatsApp (Para Cobrança)</label>
+                    <input type="tel" id="new-zap" placeholder="Ex: 551499..." class="w-full bg-zinc-950 border border-zinc-700 p-3 rounded-xl text-white outline-none focus:border-yellow-500 transition">
                 </div>
             </div>
             <div class="p-6 bg-zinc-950/50 border-t border-zinc-800 flex justify-end gap-3">
                 <button onclick="fecharModal()" class="px-6 py-2 text-zinc-400 font-bold hover:text-white transition">Cancelar</button>
-                <button onclick="salvarNovoRestaurante()" class="bg-yellow-500 text-black font-black px-8 py-2 rounded-xl hover:bg-yellow-400 transition shadow-lg shadow-yellow-500/10">CRIAR AGORA</button>
+                <button onclick="salvarNovoRestaurante()" class="bg-yellow-500 text-black font-black px-8 py-2 rounded-xl hover:bg-yellow-400 transition shadow-lg shadow-yellow-500/10">CRIAR</button>
             </div>
         </div>
     </div>
 
+    <div id="qr-code-container" style="display:none;"></div>
+
     <script>
-        // CONFIGURAÇÕES SUPABASE
         const SUPABASE_URL = 'https://nbhpycsfnjgrhnwtzwsy.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5iaHB5Y3Nmbmpncmhud3R6d3N5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMTM2NzUsImV4cCI6MjA4NDY4OTY3NX0.LsNVvMG0gWuu7noJk-YnQTpTDRVQMHtqz1Li2nDgAxM';
         const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // LÓGICA DE LOGIN INFALÍVEL
-        const SENHA_MESTRA = "126612";
+        const SENHA_MESTRA = "126612"; // Sua Senha
 
-        // Verificar se já logou antes (persistência)
-        if (localStorage.getItem('piano_master_session') === SENHA_MESTRA) {
-            liberarAcesso();
-        }
+        if (localStorage.getItem('piano_master_session') === SENHA_MESTRA) { liberarAcesso(); }
 
         function verificarSenhaMaster(e) {
-            e.preventDefault(); // Impede recarregar a página
-            const digitada = document.getElementById('pass-input').value.trim();
-            const erroMsg = document.getElementById('login-error');
-
-            if (digitada === SENHA_MESTRA) {
+            e.preventDefault();
+            if (document.getElementById('pass-input').value.trim() === SENHA_MESTRA) {
                 localStorage.setItem('piano_master_session', SENHA_MESTRA);
                 liberarAcesso();
             } else {
-                erroMsg.classList.remove('hidden');
-                document.getElementById('pass-input').value = "";
-                document.getElementById('pass-input').focus();
+                document.getElementById('login-error').classList.remove('hidden');
             }
         }
 
         function liberarAcesso() {
             document.getElementById('login-overlay').style.display = 'none';
             document.getElementById('master-content').classList.remove('hidden');
-            carregarListaDeLojas();
+            iniciarDashboard();
         }
 
-        function fazerLogout() {
-            localStorage.removeItem('piano_master_session');
-            location.reload();
+        function fazerLogout() { localStorage.removeItem('piano_master_session'); location.reload(); }
+
+        async function iniciarDashboard() {
+            // Chama o carregamento da lista
+            await carregarListaDeLojas();
+            // Chama métricas secundárias
+            atualizarMetricasGerais();
+            medirLatenciaSistema();
+            
+            // Auto-atualização
+            setInterval(() => {
+                atualizarMetricasGerais();
+                medirLatenciaSistema();
+            }, 60000);
         }
 
-        // --- FUNÇÕES DE GERENCIAMENTO ---
-
+        // --- LISTAGEM DE LOJAS (CORRIGIDA E BLINDADA) ---
         async function carregarListaDeLojas() {
-            const { data, error } = await client.from('restaurantes').select('*').order('created_at', { ascending: false });
-            if (error) return console.error("Erro Supabase:", error);
+            try {
+                const { data, error } = await client.from('restaurantes').select('*').order('created_at', { ascending: false });
+                
+                if (error) {
+                    console.error("Erro Supabase:", error);
+                    return; // Retorna silenciosamente para não travar
+                }
 
-            const container = document.getElementById('lista-restaurantes');
-            document.getElementById('stat-lojas').innerText = data.length;
-            document.getElementById('stat-abertas').innerText = data.filter(r => r.aberto).length;
+                const lojas = data || [];
 
-            container.innerHTML = data.map(res => `
-                <tr class="hover:bg-white/5 transition group border-b border-zinc-800/50">
-                    <td class="p-4">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden">
-                                <img src="${res.logo_url || 'https://via.placeholder.com/40'}" class="w-full h-full object-cover">
+                // Atualiza Stats (BLINDADO COM IFs)
+                // Usamos '?' (Optional Chaining) para garantir que não dê erro se o elemento não existir
+                const elLojas = document.getElementById('stat-lojas');
+                const elAtivas = document.getElementById('stat-ativas');
+                const elBloqueadas = document.getElementById('stat-bloqueadas');
+                
+                const ativas = lojas.filter(r => r.ativo !== false).length;
+                
+                if(elLojas) elLojas.innerText = lojas.length;
+                if(elAtivas) elAtivas.innerText = ativas;
+                if(elBloqueadas) elBloqueadas.innerText = lojas.length - ativas;
+
+                const container = document.getElementById('lista-restaurantes');
+                
+                if(lojas.length === 0) {
+                    container.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-zinc-500">Nenhum cliente cadastrado. Clique em "Novo Cliente".</td></tr>`;
+                    return;
+                }
+
+                container.innerHTML = lojas.map(res => {
+                    const isAtivo = res.ativo !== false; 
+                    
+                    return `
+                    <tr class="hover:bg-white/5 transition group border-b border-zinc-800/50">
+                        <td class="p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-zinc-800 border border-zinc-700 overflow-hidden flex items-center justify-center">
+                                    ${res.logo_url ? `<img src="${res.logo_url}" class="w-full h-full object-cover">` : '<i class="fa-solid fa-store text-zinc-600"></i>'}
+                                </div>
+                                <div>
+                                    <div class="font-bold text-white text-sm">${res.nome}</div>
+                                    <div class="text-[10px] text-zinc-500">ID: ${res.id}</div>
+                                </div>
                             </div>
-                            <span class="font-bold text-white text-sm">${res.nome}</span>
-                        </div>
-                    </td>
-                    <td class="p-4 font-mono text-[10px] text-zinc-500">${res.slug}</td>
-                    <td class="p-4">
-                        <span class="px-2 py-1 rounded-full text-[9px] font-black uppercase ${res.aberto ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}">
-                            ${res.aberto ? 'Online' : 'Offline'}
-                        </span>
-                    </td>
-                    <td class="p-4 text-right">
-                        <div class="flex justify-end gap-2">
-                            <a href="cardapio.html?loja=${res.slug}" target="_blank" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 p-2 px-3 rounded-lg text-[10px] font-bold transition flex items-center gap-2">
-                                <i class="fa-solid fa-eye text-xs"></i> VER CARDÁPIO
-                            </a>
-                            <a href="painel.html?loja=${res.slug}" target="_blank" class="bg-blue-600 hover:bg-blue-500 text-white p-2 px-3 rounded-lg text-[10px] font-bold transition flex items-center gap-2">
-                                <i class="fa-solid fa-gauge-high text-xs"></i> GESTÃO
-                            </a>
-                            <button onclick="removerLoja('${res.slug}')" class="bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white p-2 rounded-lg transition active:scale-90">
-                                <i class="fa-solid fa-trash-can text-xs"></i>
+                        </td>
+                        
+                        <td class="p-4">
+                            <div class="font-mono text-xs text-yellow-500">${res.slug}</div>
+                            <div class="text-[10px] text-zinc-400 mt-1"><i class="fa-brands fa-whatsapp"></i> ${res.telefone || 'Sem fone'}</div>
+                        </td>
+                        
+                        <td class="p-4 text-center">
+                            <span class="px-2 py-1 rounded-full text-[9px] font-black uppercase ${res.aberto ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-500/10 text-red-500 border border-red-500/20'}">
+                                ${res.aberto ? 'Aberto' : 'Fechado'}
+                            </span>
+                        </td>
+                        
+                        <td class="p-4 text-center">
+                            <button onclick="toggleBloqueio('${res.slug}', ${isAtivo})" class="px-3 py-1 rounded border text-[10px] font-bold transition ${isAtivo ? 'border-green-800 text-green-500 bg-green-900/20 hover:bg-red-900/50 hover:text-red-500 hover:border-red-800' : 'border-red-800 text-red-500 bg-red-900/20 hover:bg-green-900/50 hover:text-green-500 hover:border-green-800'}">
+                                ${isAtivo ? 'ATIVO (LIBERADO)' : '⛔ BLOQUEADO'}
                             </button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
+                        </td>
+                        
+                        <td class="p-4 text-right">
+                            <div class="flex justify-end gap-2">
+                                <a href="cardapio.html?loja=${res.slug}" target="_blank" class="bg-zinc-800 hover:bg-white hover:text-black text-zinc-400 p-2 rounded-lg transition border border-zinc-700" title="Ver Cardápio Online">
+                                    <i class="fa-solid fa-eye"></i>
+                                </a>
+
+                                <button onclick="gerarQR('${res.slug}')" class="bg-zinc-800 hover:bg-white hover:text-black text-zinc-400 p-2 rounded-lg transition border border-zinc-700" title="Baixar QR Code">
+                                    <i class="fa-solid fa-qrcode"></i>
+                                </button>
+
+                                <button onclick="cobrarCliente('${res.nome}', '${res.telefone}', '${res.chave_pix}')" class="bg-zinc-800 hover:bg-green-600 hover:text-white text-green-500 p-2 rounded-lg transition border border-zinc-700" title="Cobrar Mensalidade">
+                                    <i class="fa-solid fa-hand-holding-dollar"></i>
+                                </button>
+
+                                <a href="painel.html?loja=${res.slug}" target="_blank" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-[10px] font-bold transition flex items-center gap-2 border border-blue-500 shadow-lg shadow-blue-900/20" title="Acessar Painel">
+                                    <i class="fa-solid fa-gauge-high"></i> PAINEL
+                                </a>
+                                
+                                <button onclick="removerLoja('${res.slug}')" class="bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white p-2 rounded-lg transition border border-red-900/30" title="Deletar Cliente">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `}).join('');
+
+            } catch (e) {
+                console.error("Erro JS:", e);
+                // Não exibe alert pra não travar a experiência, só loga
+            }
+        }
+
+        // --- DASHBOARD METRICS ---
+
+        async function atualizarMetricasGerais() {
+            const hoje = new Date().toISOString().split('T')[0];
+            const { data: vendas, error } = await client.from('pedidos')
+                .select('total')
+                .gte('created_at', `${hoje}T00:00:00`)
+                .neq('status', 'cancelado');
+            
+            if(!error && vendas) {
+                const totalHoje = vendas.reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
+                const elVendas = document.getElementById('stat-vendas-hoje');
+                if(elVendas) elVendas.innerText = `R$ ${totalHoje.toFixed(2)}`;
+            }
+        }
+
+        async function medirLatenciaSistema() {
+            const inicio = performance.now();
+            await client.from('restaurantes').select('id').limit(1);
+            const fim = performance.now();
+            const latencia = Math.round(fim - inicio);
+            
+            const elPing = document.getElementById('stat-ping');
+            const elIndicador = document.getElementById('ping-indicator');
+            const elTexto = document.getElementById('stat-status-text');
+            const elCard = document.getElementById('card-status-sistema');
+
+            if(!elPing) return; // Proteção
+
+            elPing.innerText = `${latencia}ms`;
+            elIndicador.className = "w-4 h-4 rounded-full animate-pulse";
+            elCard.className = "glass p-6 rounded-2xl border-t-4";
+
+            if (latencia < 500) {
+                elIndicador.classList.add('bg-green-500');
+                elCard.classList.add('border-green-500');
+                elTexto.innerText = "Sistema Operacional";
+                elTexto.className = "text-[10px] text-green-500 mt-1 font-bold";
+            } else {
+                elIndicador.classList.add('bg-yellow-500');
+                elCard.classList.add('border-yellow-500');
+                elTexto.innerText = "Lentidão Detectada";
+                elTexto.className = "text-[10px] text-yellow-500 mt-1 font-bold";
+            }
+        }
+
+        // --- FUNÇÕES DE AÇÃO ---
+
+        async function toggleBloqueio(slug, estadoAtual) {
+            const novoEstado = !estadoAtual;
+            if(!novoEstado && !confirm("Tem certeza? O cardápio ficará inacessível.")) return;
+            const { error } = await client.from('restaurantes').update({ ativo: novoEstado }).eq('slug', slug);
+            if(error) alert('Erro ao alterar status.');
+            else carregarListaDeLojas();
+        }
+
+        function cobrarCliente(nome, telefone, chavePix) {
+            if(!telefone || telefone === 'null' || telefone === 'undefined') {
+                telefone = prompt("Este cliente não tem telefone. Digite (com DDD):");
+                if(!telefone) return;
+            }
+            const foneLimpo = telefone.replace(/\D/g, '');
+            const chave = chavePix && chavePix !== 'null' ? chavePix : "[SUA CHAVE PIX]";
+            
+            const msg = window.encodeURIComponent(
+                `Fala ${nome}, tudo certo? 🚀\n\n` +
+                `Passando pra lembrar da mensalidade do Sistema.\n` +
+                `Segue a chave para renovação:\n\n` +
+                `👉 *${chave}*\n` +
+                `Valor: *R$ 100,00*\n\n` +
+                `Tmj! Aguardo o comprovante.`
+            );
+            window.open(`https://api.whatsapp.com/send?phone=${foneLimpo}&text=${msg}`, '_blank');
+        }
+
+        function gerarQR(slug) {
+            // !!! MUDE AQUI PARA O SEU LINK REAL !!!
+            const link = `https://seusite.com/cardapio.html?loja=${slug}`; 
+            
+            const container = document.getElementById('qr-code-container');
+            container.innerHTML = '';
+            
+            new QRCode(container, {
+                text: link,
+                width: 1000,
+                height: 1000,
+                colorDark : "#000000",
+                colorLight : "#ffffff",
+                correctLevel : QRCode.CorrectLevel.H
+            });
+
+            setTimeout(() => {
+                const img = container.querySelector('img');
+                if(img) {
+                    const a = document.createElement('a');
+                    a.href = img.src;
+                    a.download = `qrcode-${slug}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                } else {
+                    const canvas = container.querySelector('canvas');
+                    if(canvas) {
+                        const a = document.createElement('a');
+                        a.href = canvas.toDataURL("image/png");
+                        a.download = `qrcode-${slug}.png`;
+                        a.click();
+                    }
+                }
+            }, 500);
         }
 
         function abrirModalNovo() { document.getElementById('modal-novo').classList.remove('hidden'); }
@@ -216,36 +389,39 @@
         async function salvarNovoRestaurante() {
             const nome = document.getElementById('new-nome').value;
             const slug = document.getElementById('new-slug').value;
+            const fone = document.getElementById('new-zap').value;
 
-            if (!nome || !slug) return alert("Preencha o nome do estabelecimento.");
+            if (!nome || !slug) return alert("Preencha o nome.");
 
-            const { error } = await client.from('restaurantes').insert({ slug, nome, aberto: true });
+            const { error } = await client.from('restaurantes').insert({ 
+                slug, 
+                nome, 
+                telefone: fone, 
+                aberto: true,
+                ativo: true 
+            });
 
             if (error) {
-                if (error.code === '23505') alert("Este nome/slug já está em uso!");
-                else alert("Erro ao criar: " + error.message);
+                if (error.code === '23505') alert("Slug já existe!");
+                else alert("Erro: " + error.message);
             } else {
-                alert(`Sucesso! ${nome} foi criado.`);
+                alert(`Sucesso! Cliente ${nome} criado.`);
                 fecharModal();
                 carregarListaDeLojas();
             }
         }
 
         async function removerLoja(slug) {
-            if (!confirm(`CUIDADO! Isso apagará todos os dados da loja '${slug}'. Deseja continuar?`)) return;
-            
+            if (!confirm(`⚠️ PERIGO: Apagar '${slug}' deleta TUDO. Continuar?`)) return;
             try {
-                // Limpeza em cascata via código para garantir exclusão
                 await client.from('produtos').delete().eq('restaurante_slug', slug);
                 await client.from('pedidos').delete().eq('restaurante_slug', slug);
+                await client.from('taxas_entrega').delete().eq('restaurante_slug', slug);
                 const { error } = await client.from('restaurantes').delete().eq('slug', slug);
-                
                 if (error) throw error;
-                alert("Loja removida.");
+                alert("Cliente removido.");
                 carregarListaDeLojas();
-            } catch (e) {
-                alert("Erro ao excluir: " + e.message);
-            }
+            } catch (e) { alert("Erro ao excluir: " + e.message); }
         }
     </script>
 </body>
