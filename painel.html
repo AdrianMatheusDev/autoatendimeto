@@ -475,7 +475,7 @@
             
             const msg = window.encodeURIComponent(
                 `Olá *${p.cliente}*! 👋\n\n` +
-                `Seu pedido no *Black Piano* deu o total de: *R$ ${parseFloat(p.total).toFixed(2)}*.\n\n` +
+                `Seu pedido deu o total de: *R$ ${parseFloat(p.total).toFixed(2)}*.\n\n` +
                 `Para agilizar, você pode pagar via Pix:\n` +
                 `🔑 Chave: *${CHAVE_PIX_LOJA}*\n\n` +
                 `Assim que fizer, me manda o comprovante por aqui? Obrigado! 🎹`
@@ -486,7 +486,7 @@
         function enviarMensagemEntrega(pedido) {
             const fone = pedido.telefone ? pedido.telefone.replace(/\D/g, '') : '';
             if (!fone) return alert('Cliente não informou o telefone!');
-            const msg = window.encodeURIComponent(`Olá *${pedido.cliente}*! 🛵\n\nSeu pedido no *Black Piano* acabou de sair para entrega! Em instantes estará aí.\n\n*Total:* R$ ${parseFloat(pedido.total).toFixed(2)}\n\nObrigado pela preferência! 🎹`);
+            const msg = window.encodeURIComponent(`Olá *${pedido.cliente}*! 🛵\n\nSeu pedido acabou de sair para entrega! Em instantes estará aí.\n\n*Total:* R$ ${parseFloat(pedido.total).toFixed(2)}\n\nObrigado pela preferência! 🎹`);
             window.open(`https://api.whatsapp.com/send?phone=55${fone}&text=${msg}`, '_blank');
         }
 
