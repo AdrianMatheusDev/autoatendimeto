@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Gestão</title>
+    <title>Painel de Gestão - Black Piano</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -310,15 +310,33 @@
         const urlParams = new URLSearchParams(window.location.search);
         const LOJA_SLUG = urlParams.get('loja') || 'geral';
         
-        let CHAVE_PIX_LOJA = ''; // Global para guardar a chave
+        let CHAVE_PIX_LOJA = ''; 
+        let MAPA_CATEGORIAS = {}; // <--- NOVO: Dicionário para guardar Nome -> Categoria
 
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('hist-date').valueAsDate = new Date();
+            await carregarMapaCategorias(); // <--- Carrega categorias antes de tudo
             switchTab('pedidos'); 
             carregarConfig(); 
             carregarFaturamentoDiario(); 
             setupRealtime(); 
         });
+
+        // --- FUNÇÃO NOVA: CRIA O MAPA DE CATEGORIAS ---
+        async function carregarMapaCategorias() {
+            try {
+                // Busca todos os produtos e suas categorias
+                const { data } = await client.from('produtos').select('nome, categoria').eq('restaurante_slug', LOJA_SLUG);
+                if (data) {
+                    data.forEach(p => {
+                        // Salva no mapa: "Pizza Calabresa" = "Pizzas Salgadas"
+                        if(p.nome && p.categoria) {
+                            MAPA_CATEGORIAS[p.nome] = p.categoria;
+                        }
+                    });
+                }
+            } catch (e) { console.error("Erro ao mapear categorias", e); }
+        }
 
         function switchTab(tab) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -390,6 +408,9 @@
                 let itens = []; try { itens = JSON.parse(p.itens || '[]'); } catch(e) {}
                 
                 const listaItens = itens.map(i => {
+                    // TENTA PEGAR A CATEGORIA DO ITEM OU USA O MAPA
+                    const categoriaReal = i.categoria || MAPA_CATEGORIAS[i.nome] || '';
+
                     let detalhes = '';
                     if(i.tamanho) detalhes += `<span class="text-[10px] text-yellow-500 bg-yellow-900/20 px-1 rounded ml-2">${i.tamanho}</span>`;
                     if(i.adicionais && i.adicionais.length > 0) {
@@ -399,6 +420,7 @@
 
                     return `<li class="text-sm border-b border-zinc-800 py-2 last:border-0">
                         <div class="flex flex-col">
+                            ${categoriaReal ? `<span class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-0.5">${categoriaReal}</span>` : ''}
                             <span class="text-zinc-300 font-medium">${i.nome} ${i.tamanho ? `<span class="text-[10px] text-yellow-500 bg-yellow-900/20 px-1 rounded ml-1">${i.tamanho}</span>` : ''}</span>
                             ${i.adicionais && i.adicionais.length > 0 ? `<span class="text-[10px] text-zinc-500">+ ${i.adicionais.map(a=>a.nome).join(', ')}</span>` : ''}
                             ${i.obs ? `<span class="text-[10px] text-yellow-500 italic">Obs: ${i.obs}</span>` : ''}
@@ -429,7 +451,6 @@
                     `;
                 }
                 
-                // --- BOTÃO DE COBRANÇA PIX (NOVO) ---
                 let btnCobranca = '';
                 if (!isPago && p.telefone) {
                     btnCobranca = `
@@ -466,7 +487,6 @@
             }).join('');
         }
 
-        // --- FUNÇÃO NOVA: ENVIAR COBRANÇA PIX ---
         function enviarCobrancaPix(p) {
             if(!CHAVE_PIX_LOJA) return alert("Cadastre a Chave Pix nas configurações primeiro!");
             
@@ -555,8 +575,6 @@
             });
         }
         
-        // --- FUNÇÕES DE TAMANHOS E ADICIONAIS ---
-
         function toggleAreaTamanhos() {
             const check = document.getElementById('check-tem-tamanhos');
             const area = document.getElementById('area-tamanhos');
@@ -610,7 +628,6 @@
             document.getElementById('prod-promo').checked = false;
             document.getElementById('prod-disponivel').checked = true;
             
-            // Limpar áreas dinâmicas
             document.getElementById('area-tamanhos').innerHTML = '<p class="text-xs text-zinc-500 italic text-center" id="msg-sem-tam">Nenhum tamanho configurado.</p>';
             document.getElementById('area-adicionais').innerHTML = '';
             document.getElementById('check-tem-tamanhos').checked = false;
@@ -631,14 +648,12 @@
             document.getElementById('prod-promo').checked = p.mostrar_promo || false;
             document.getElementById('prod-disponivel').checked = p.disponivel !== false;
 
-            // Carregar Tamanhos
             if (p.variacoes && p.variacoes.length > 0) {
                 document.getElementById('check-tem-tamanhos').checked = true;
                 toggleAreaTamanhos();
                 p.variacoes.forEach(v => addTamanhoRow(v.nome, v.preco));
             }
 
-            // Carregar Adicionais
             if (p.adicionais && p.adicionais.length > 0) {
                 p.adicionais.forEach(a => addAdicionalRow(a.nome, a.preco));
             }
@@ -647,7 +662,6 @@
         async function salvarProduto() {
             const id = document.getElementById('prod-id').value;
             
-            // Coletar Tamanhos
             let variacoes = [];
             if(document.getElementById('check-tem-tamanhos').checked) {
                 document.querySelectorAll('.row-tamanho').forEach(row => {
@@ -657,7 +671,6 @@
                 });
             }
 
-            // Coletar Adicionais
             let adicionais = [];
             document.querySelectorAll('.row-adicional').forEach(row => {
                 const nome = row.querySelector('.input-add-nome').value;
@@ -665,7 +678,6 @@
                 if(nome && !isNaN(preco)) adicionais.push({ nome, preco });
             });
 
-            // Definir preço base (se tiver tamanhos, pega o menor preço como base)
             let precoBase = parseFloat(document.getElementById('prod-preco').value);
             if(variacoes.length > 0) {
                 variacoes.sort((a,b) => a.preco - b.preco);
@@ -688,6 +700,9 @@
             if (id) await client.from('produtos').update(payload).eq('id', id).eq('restaurante_slug', LOJA_SLUG);
             else await client.from('produtos').insert(payload);
             
+            // ATUALIZA O MAPA DEPOIS DE SALVAR
+            await carregarMapaCategorias();
+
             document.getElementById('modal-produto').classList.add('hidden');
             listarProdutos();
         }
@@ -695,13 +710,11 @@
         async function toggleProd(id, campo, valor) { await client.from('produtos').update({ [campo]: valor }).eq('id', id).eq('restaurante_slug', LOJA_SLUG); listarProdutos(); }
         async function deletarProduto(id) { if(confirm('Excluir?')) { await client.from('produtos').delete().eq('id', id).eq('restaurante_slug', LOJA_SLUG); listarProdutos(); } }
 
-        // --- ATUALIZAÇÕES DO PIX ---
         async function carregarConfig() {
             const { data } = await client.from('restaurantes').select('*').eq('slug', LOJA_SLUG).single();
             if(data) { 
                 document.getElementById('cfg-nome').value = data.nome; 
                 document.getElementById('cfg-aberto').checked = data.aberto; 
-                // Carrega a chave
                 document.getElementById('cfg-pix-key').value = data.chave_pix || '';
                 CHAVE_PIX_LOJA = data.chave_pix || '';
             }
@@ -713,7 +726,7 @@
             const updates = { 
                 nome: document.getElementById('cfg-nome').value, 
                 aberto: document.getElementById('cfg-aberto').checked,
-                chave_pix: document.getElementById('cfg-pix-key').value // Salva a chave
+                chave_pix: document.getElementById('cfg-pix-key').value 
             };
             const logo = document.getElementById('cfg-logo-file').files[0];
             const banner = document.getElementById('cfg-banner-file').files[0];
@@ -753,4 +766,3 @@
     </script>
 </body>
 </html>
-
