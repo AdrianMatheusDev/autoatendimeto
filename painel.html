@@ -391,8 +391,14 @@
 
         async function carregarFaturamentoDiario() {
             try {
-                const hoje = new Date().toISOString().split('T')[0];
-                const { data } = await client.from('pedidos').select('total').eq('restaurante_slug', LOJA_SLUG).gte('created_at', `${hoje}T00:00:00`);
+                const hoje = (() => {
+                  const d = new Date();
+                  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                  return d.toISOString().split('T')[0];
+                })();
+                const start = `${hoje}T00:00:00`;
+                const end = `${hoje}T23:59:59`;
+                const { data } = await client.from('pedidos').select('total').eq('restaurante_slug', LOJA_SLUG).gte('created_at', start).lte('created_at', end);
                 const total = (data || []).reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
                 document.getElementById('valor-faturamento-dia').innerText = `R$ ${total.toFixed(2)}`;
             } catch (e) {}
