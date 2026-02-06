@@ -268,10 +268,13 @@
         // --- DASHBOARD METRICS ---
 
         async function atualizarMetricasGerais() {
-            const hoje = new Date().toISOString().split('T')[0];
+            const hoje = (() => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().split('T')[0]; })();
+            const start = `${hoje}T00:00:00`;
+            const end = `${hoje}T23:59:59`;
             const { data: vendas, error } = await client.from('pedidos')
                 .select('total')
-                .gte('created_at', `${hoje}T00:00:00`)
+                .gte('created_at', start)
+                .lte('created_at', end)
                 .neq('status', 'cancelado');
             
             if(!error && vendas) {
