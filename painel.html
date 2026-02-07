@@ -414,10 +414,26 @@
                     }
                     if(i.obs) detalhes += `<div class="text-[10px] text-yellow-500 pl-2 mt-1 italic">Obs: ${i.obs}</div>`;
 
+                    // --- CÁLCULO DO PREÇO DA LINHA (NOVO) ---
+                    let precoItemBase = parseFloat(i.preco || 0);
+                    let precoAdicionais = 0;
+                    if(i.adicionais) {
+                        i.adicionais.forEach(a => precoAdicionais += parseFloat(a.preco || 0));
+                    }
+                    let totalLinha = (precoItemBase + precoAdicionais) * (i.quantity || 1);
+                    // ----------------------------------------
+
                     return `<li class="text-sm border-b border-zinc-800 py-2 last:border-0">
-                        <div class="flex flex-col">
+                        <div class="flex flex-col w-full">
+                            <div class="flex justify-between items-start">
+                                <span class="text-zinc-300 font-medium">
+                                    ${i.quantity || 1}x ${i.nome} 
+                                    ${i.tamanho ? `<span class="text-[10px] text-yellow-500 bg-yellow-900/20 px-1 rounded ml-1">${i.tamanho}</span>` : ''}
+                                </span>
+                                <span class="text-zinc-400 font-mono text-xs whitespace-nowrap ml-2">R$ ${totalLinha.toFixed(2)}</span>
+                            </div>
+                            
                             ${categoriaReal ? `<span class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-0.5">${categoriaReal}</span>` : ''}
-                            <span class="text-zinc-300 font-medium">${i.nome} ${i.tamanho ? `<span class="text-[10px] text-yellow-500 bg-yellow-900/20 px-1 rounded ml-1">${i.tamanho}</span>` : ''}</span>
                             ${i.adicionais && i.adicionais.length > 0 ? `<span class="text-[10px] text-zinc-500">+ ${i.adicionais.map(a=>a.nome).join(', ')}</span>` : ''}
                             ${i.obs ? `<span class="text-[10px] text-yellow-500 italic">Obs: ${i.obs}</span>` : ''}
                         </div>
@@ -494,15 +510,27 @@
             try { itens = JSON.parse(p.itens || '[]'); } catch(e) {}
             
             const listaHTML = itens.map(i => {
-                return `<div style="margin-bottom: 5px;">
-                            <div style="font-weight: bold; font-size: 13px;">${i.quantity || 1}x ${i.nome} ${i.tamanho || ''}</div>
-                            ${i.adicionais && i.adicionais.length ? `<div style="font-size:11px; margin-left: 10px;">+ ${i.adicionais.map(a => a.nome).join(', ')}</div>` : ''}
+                // Cálculo do preço do item (considerando que 'preco' possa vir no JSON)
+                // Se não vier, assume 0. Se tiver adicionais, soma.
+                let precoItemBase = parseFloat(i.preco || 0);
+                let precoAdicionais = 0;
+                if(i.adicionais) {
+                    i.adicionais.forEach(a => precoAdicionais += parseFloat(a.preco || 0));
+                }
+                // Multiplica pela quantidade
+                let totalLinha = (precoItemBase + precoAdicionais) * (i.quantity || 1);
+
+                return `<div style="border-bottom: 1px dashed #ccc; padding-bottom: 5px; margin-bottom: 5px;">
+                            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px;">
+                                <span>${i.quantity || 1}x ${i.nome} ${i.tamanho || ''}</span>
+                                <span>R$ ${totalLinha.toFixed(2)}</span>
+                            </div>
+                            ${i.adicionais && i.adicionais.length ? `<div style="font-size:11px; margin-left: 10px; color: #555;">+ ${i.adicionais.map(a => `${a.nome}`).join(', ')}</div>` : ''}
                             ${i.obs ? `<div style="font-size:11px; margin-left: 10px; font-weight:bold;">OBS: ${i.obs}</div>` : ''}
                         </div>`;
             }).join('');
 
             const janela = window.open('', '', 'width=350,height=600');
-            // OBSERVE AS BARRAS INVERTIDAS NAS TAGS DE FECHAMENTO (<\/...) - ISSO RESOLVE O ERRO
             janela.document.write(`
                 <html>
                 <head>
