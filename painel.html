@@ -405,7 +405,16 @@
                 let itens = []; try { itens = JSON.parse(p.itens || '[]'); } catch(e) {}
                 
                 const listaItens = itens.map(i => {
-                    const categoriaReal = i.categoria || MAPA_CATEGORIAS[i.nome] || '';
+                    // TENTA PEGAR A CATEGORIA DO ITEM OU USA O MAPA OU ADIVINHA
+                    let cat = i.categoria || MAPA_CATEGORIAS[i.nome];
+                    if(!cat) {
+                        const n = i.nome.toLowerCase();
+                        if(n.includes('esfiha')) cat = 'Esfihas';
+                        else if(n.includes('pizza')) cat = 'Pizzas';
+                        else if(n.includes('hamburguer') || n.includes('burger')) cat = 'Lanches';
+                        else if(n.includes('coca') || n.includes('fanta') || n.includes('suco') || n.includes('agua')) cat = 'Bebidas';
+                    }
+                    let categoriaReal = cat || 'Geral';
 
                     let detalhes = '';
                     if(i.tamanho) detalhes += `<span class="text-[10px] text-yellow-500 bg-yellow-900/20 px-1 rounded ml-2">${i.tamanho}</span>`;
@@ -414,26 +423,37 @@
                     }
                     if(i.obs) detalhes += `<div class="text-[10px] text-yellow-500 pl-2 mt-1 italic">Obs: ${i.obs}</div>`;
 
-                    // --- CÁLCULO DO PREÇO DA LINHA (NOVO) ---
+                    // --- CÁLCULO DO PREÇO DA LINHA E CORREÇÃO DE CATEGORIA ---
                     let precoItemBase = parseFloat(i.preco || 0);
                     let precoAdicionais = 0;
                     if(i.adicionais) {
                         i.adicionais.forEach(a => precoAdicionais += parseFloat(a.preco || 0));
                     }
                     let totalLinha = (precoItemBase + precoAdicionais) * (i.quantity || 1);
-                    // ----------------------------------------
+                    let precoUnitario = precoItemBase + precoAdicionais;
+
+                    // *** LÓGICA DE EMERGÊNCIA ***
+                    // Se o sistema marcou como Pizza (ou Geral) mas custa menos de R$ 25 e não é "Broto", vira ESFIHA
+                    if ( (categoriaReal.toLowerCase().includes('pizza') || categoriaReal === 'Geral') && precoUnitario < 25 ) {
+                        if (!i.nome.toLowerCase().includes('broto') && !i.nome.toLowerCase().includes('pequena')) {
+                            categoriaReal = 'ESFIHA';
+                        }
+                    }
+                    // ---------------------------------
 
                     return `<li class="text-sm border-b border-zinc-800 py-2 last:border-0">
                         <div class="flex flex-col w-full">
                             <div class="flex justify-between items-start">
-                                <span class="text-zinc-300 font-medium">
-                                    ${i.quantity || 1}x ${i.nome} 
-                                    ${i.tamanho ? `<span class="text-[10px] text-yellow-500 bg-yellow-900/20 px-1 rounded ml-1">${i.tamanho}</span>` : ''}
-                                </span>
-                                <span class="text-zinc-400 font-mono text-xs whitespace-nowrap ml-2">R$ ${totalLinha.toFixed(2)}</span>
+                                <div>
+                                    ${categoriaReal ? `<span class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-0.5 block">${categoriaReal}</span>` : ''}
+                                    <span class="text-zinc-300 font-medium">
+                                        ${i.quantity || 1}x ${i.nome} 
+                                        ${i.tamanho ? `<span class="text-[10px] text-yellow-500 bg-yellow-900/20 px-1 rounded ml-1">${i.tamanho}</span>` : ''}
+                                    </span>
+                                </div>
+                                <span class="text-zinc-400 font-mono text-xs whitespace-nowrap ml-2 mt-4">R$ ${totalLinha.toFixed(2)}</span>
                             </div>
                             
-                            ${categoriaReal ? `<span class="text-[10px] text-zinc-500 uppercase font-bold tracking-wider mb-0.5">${categoriaReal}</span>` : ''}
                             ${i.adicionais && i.adicionais.length > 0 ? `<span class="text-[10px] text-zinc-500">+ ${i.adicionais.map(a=>a.nome).join(', ')}</span>` : ''}
                             ${i.obs ? `<span class="text-[10px] text-yellow-500 italic">Obs: ${i.obs}</span>` : ''}
                         </div>
@@ -510,14 +530,11 @@
             try { itens = JSON.parse(p.itens || '[]'); } catch(e) {}
             
             const listaHTML = itens.map(i => {
-                // Cálculo do preço do item (considerando que 'preco' possa vir no JSON)
-                // Se não vier, assume 0. Se tiver adicionais, soma.
                 let precoItemBase = parseFloat(i.preco || 0);
                 let precoAdicionais = 0;
                 if(i.adicionais) {
                     i.adicionais.forEach(a => precoAdicionais += parseFloat(a.preco || 0));
                 }
-                // Multiplica pela quantidade
                 let totalLinha = (precoItemBase + precoAdicionais) * (i.quantity || 1);
 
                 return `<div style="border-bottom: 1px dashed #ccc; padding-bottom: 5px; margin-bottom: 5px;">
