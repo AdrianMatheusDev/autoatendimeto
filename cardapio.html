@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cardápio Digital</title>
+    <title>Cardápio Digital - Black Piano</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -407,8 +407,11 @@
             if(prod.categoria.toLowerCase().includes('pizza')) {
                 areaPizza.classList.remove('hidden');
                 checkPizza.checked = false;
+                checkPizza.disabled = false; // garante que o checkbox esteja habilitado ao abrir
                 document.getElementById('container-select-sabor').classList.add('hidden');
-                
+                selectPizza.value = "";
+                segundoSaborSelecionado = null;
+
                 selectPizza.innerHTML = '<option value="">Selecione o 2º sabor...</option>';
                 const outrasPizzas = produtosCache.filter(p => 
                     p.categoria === prod.categoria && 
@@ -460,6 +463,25 @@
         function selecionarTamanho(idx) {
             if(!produtoSelecionadoAtual || !produtoSelecionadoAtual.variacoes) return;
             tamanhoSelecionado = produtoSelecionadoAtual.variacoes[idx];
+
+            // Se for pizza e o tamanho selecionado for 'cone', desabilita a opção de 2º sabor
+            try {
+                if (produtoSelecionadoAtual.categoria && produtoSelecionadoAtual.categoria.toLowerCase().includes('pizza') && tamanhoSelecionado && tamanhoSelecionado.nome && tamanhoSelecionado.nome.toLowerCase() === 'cone') {
+                    const check = document.getElementById('check-meio-a-meio');
+                    const container = document.getElementById('container-select-sabor');
+                    const select = document.getElementById('select-segundo-sabor');
+                    if (check) { check.checked = false; check.disabled = true; }
+                    if (container) container.classList.add('hidden');
+                    if (select) select.value = "";
+                    segundoSaborSelecionado = null;
+                } else {
+                    const check = document.getElementById('check-meio-a-meio');
+                    if (check) check.disabled = false; // re-habilita para outros tamanhos
+                }
+            } catch (e) {
+                console.warn('Erro ao aplicar regra cone/meio-a-meio', e);
+            }
+
             atualizarTotalModal();
         }
 
@@ -732,4 +754,3 @@
     </script>
 </body>
 </html>
-
