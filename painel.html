@@ -405,7 +405,7 @@
                 let itens = []; try { itens = JSON.parse(p.itens || '[]'); } catch(e) {}
                 
                 const listaItens = itens.map(i => {
-                    // TENTA PEGAR A CATEGORIA DO ITEM OU USA O MAPA OU ADIVINHA
+                    // TENTA PEGAR A CATEGORIA DO ITEM OU USA O MAPA OU ADIVINHA (CORREÇÃO ESFIHA)
                     let cat = i.categoria || MAPA_CATEGORIAS[i.nome];
                     if(!cat) {
                         const n = i.nome.toLowerCase();
@@ -414,7 +414,7 @@
                         else if(n.includes('hamburguer') || n.includes('burger')) cat = 'Lanches';
                         else if(n.includes('coca') || n.includes('fanta') || n.includes('suco') || n.includes('agua')) cat = 'Bebidas';
                     }
-                    let categoriaReal = cat || 'Geral';
+                    const categoriaReal = cat || 'Geral';
 
                     let detalhes = '';
                     if(i.tamanho) detalhes += `<span class="text-[10px] text-yellow-500 bg-yellow-900/20 px-1 rounded ml-2">${i.tamanho}</span>`;
@@ -423,22 +423,13 @@
                     }
                     if(i.obs) detalhes += `<div class="text-[10px] text-yellow-500 pl-2 mt-1 italic">Obs: ${i.obs}</div>`;
 
-                    // --- CÁLCULO DO PREÇO DA LINHA E CORREÇÃO DE CATEGORIA ---
+                    // --- CÁLCULO DO PREÇO DA LINHA ---
                     let precoItemBase = parseFloat(i.preco || 0);
                     let precoAdicionais = 0;
                     if(i.adicionais) {
                         i.adicionais.forEach(a => precoAdicionais += parseFloat(a.preco || 0));
                     }
                     let totalLinha = (precoItemBase + precoAdicionais) * (i.quantity || 1);
-                    let precoUnitario = precoItemBase + precoAdicionais;
-
-                    // *** LÓGICA DE EMERGÊNCIA ***
-                    // Se o sistema marcou como Pizza (ou Geral) mas custa menos de R$ 25 e não é "Broto", vira ESFIHA
-                    if ( (categoriaReal.toLowerCase().includes('pizza') || categoriaReal === 'Geral') && precoUnitario < 25 ) {
-                        if (!i.nome.toLowerCase().includes('broto') && !i.nome.toLowerCase().includes('pequena')) {
-                            categoriaReal = 'ESFIHA';
-                        }
-                    }
                     // ---------------------------------
 
                     return `<li class="text-sm border-b border-zinc-800 py-2 last:border-0">
