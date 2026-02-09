@@ -515,34 +515,52 @@
             }).join('');
         }
 
-        // --- FUNÇÃO DE IMPRESSÃO BLINDADA (EVITA O "TEXTÃO") ---
+        // --- FUNÇÃO DE IMPRESSÃO BLINDADA (ROBUSTA: PARSE + FORMATA PREÇOS) ---
         function imprimirComanda(p) {
-            let itens = []; 
-            try { itens = JSON.parse(p.itens || '[]'); } catch(e) {}
-            
-            const listaHTML = itens.map(i => {
-                let precoItemBase = parseFloat(i.preco || 0);
-                let precoAdicionais = 0;
-                if(i.adicionais) {
-                    i.adicionais.forEach(a => precoAdicionais += parseFloat(a.preco || 0));
-                }
-                let totalLinha = (precoItemBase + precoAdicionais) * (i.quantity || 1);
+            let itens = [];
+            try {
+                if (!p) p = {};
+                if (typeof p.itens === 'string') itens = JSON.parse(p.itens || '[]');
+                else if (Array.isArray(p.itens)) itens = p.itens;
+            } catch (e) {
+                console.error('Erro ao parsear itens do pedido:', e);
+                itens = [];
+            }
 
-                return `<div style="border-bottom: 1px dashed #ccc; padding-bottom: 5px; margin-bottom: 5px;">
-                            <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 13px;">
-                                <span>${i.quantity || 1}x ${i.nome} ${i.tamanho || ''}</span>
-                                <span>R$ ${totalLinha.toFixed(2)}</span>
-                            </div>
-                            ${i.adicionais && i.adicionais.length ? `<div style="font-size:11px; margin-left: 10px; color: #555;">+ ${i.adicionais.map(a => `${a.nome}`).join(', ')}</div>` : ''}
-                            ${i.obs ? `<div style="font-size:11px; margin-left: 10px; font-weight:bold;">OBS: ${i.obs}</div>` : ''}
-                        </div>`;
+            function parsePreco(v) {
+                if (v == null) return 0;
+                // Remove 'R$', espaços, troca vírgula por ponto e remove caracteres não numéricos
+                let s = String(v).replace(/\s/g, '').replace(/R\$|r\$/g, '').replace(/,/g, '.');
+                s = s.replace(/[^0-9.\-]/g, '');
+                const n = parseFloat(s);
+                return isNaN(n) ? 0 : n;
+            }
+
+            const listaHTML = itens.map(i => {
+                const quantidade = parseInt(i.quantity || i.qtd || 1, 10) || 1;
+                const precoItemBase = parsePreco(i.preco);
+                let precoAdicionais = 0;
+                if (i.adicionais && Array.isArray(i.adicionais)) {
+                    i.adicionais.forEach(a => precoAdicionais += parsePreco(a.preco));
+                }
+                const totalLinha = (precoItemBase + precoAdicionais) * quantidade;
+
+                const nomeLinha = `${quantidade}x ${i.nome || ''} ${i.tamanho || ''}`.trim();
+                const adicionaisTxt = (i.adicionais && i.adicionais.length) ? `+ ${i.adicionais.map(a => a.nome).join(', ')}` : '';
+                const obsTxt = i.obs ? `OBS: ${i.obs}` : '';
+
+                return `
+                    <div style="border-bottom: 1px dashed #ccc; padding-bottom: 5px; margin-bottom: 5px; display:flex; justify-content:space-between; align-items:center;">
+                        <div style="font-weight: bold; font-size:13px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${nomeLinha} ${adicionaisTxt ? '<span style="font-weight:normal; font-size:11px;"> - '+adicionaisTxt+'</span>' : ''} ${obsTxt ? '<span style="display:block; font-size:11px; font-weight:normal;">'+obsTxt+'</span>' : ''}</div>
+                        <div style="min-width:70px; text-align:right; font-weight:bold; margin-left:8px;">R$ ${totalLinha.toFixed(2)}</div>
+                    </div>`;
             }).join('');
 
             const janela = window.open('', '', 'width=350,height=600');
             janela.document.write(`
                 <html>
                 <head>
-                    <title>Comanda #${p.id.slice(0, 4)}</title>
+                    <title>Comanda #${(p.id || '').toString().slice(0, 8)}</title>
                     <style>
                         @page { margin: 0; }
                         body { font-family: 'Courier New', monospace; width: 100%; max-width: 300px; padding: 10px; font-size: 12px; margin: 0 auto; color: #000; }
@@ -550,46 +568,39 @@
                         .bold { font-weight: bold; }
                         .line { border-bottom: 1px dashed #000; margin: 8px 0; }
                         .big { font-size: 16px; }
-                        .header { margin-bottom: 10px; }
                         .flex-between { display: flex; justify-content: space-between; }
+                        /* Garante que o preço não quebre de linha e fique visível */
+                        .price { min-width:70px; text-align:right; }
                     <\/style>
                 </head>
                 <body>
                     <div class="center bold big">BLACK PIANO</div>
-                    <div class="center" style="font-size:10px;">Pedido: #${p.id.slice(0, 4)}</div>
+                    <div class="center" style="font-size:10px;">Pedido: #${(p.id || '').toString().slice(0, 8)}</div>
                     <div class="line"></div>
-                    
-                    <div class="bold big center">${p.tipo_entrega.toUpperCase() === 'MESA' ? 'MESA ' + p.mesa : 'DELIVERY'}</div>
-                    <div class="center">${new Date(p.created_at).toLocaleString()}</div>
-                    
+                    <div class="bold big center">${(p.tipo_entrega || '').toUpperCase() === 'MESA' ? 'MESA ' + (p.mesa || '') : 'DELIVERY'}</div>
+                    <div class="center">${p.created_at ? new Date(p.created_at).toLocaleString() : new Date().toLocaleString()}</div>
                     <div class="line"></div>
-                    <div class="bold">CLIENTE: ${p.cliente}</div>
+                    <div class="bold">CLIENTE: ${p.cliente || ''}</div>
                     ${p.telefone ? `<div>Tel: ${p.telefone}</div>` : ''}
                     ${p.endereco ? `<div>End: ${p.endereco}</div>` : ''}
-                    
                     <div class="line"></div>
                     <div style="margin-bottom: 5px;" class="bold">ITENS:</div>
                     ${listaHTML}
-                    
                     <div class="line"></div>
-                    <div class="flex-between big bold">
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-weight:bold; font-size:14px;">
                         <span>TOTAL:</span>
-                        <span>R$ ${parseFloat(p.total).toFixed(2)}</span>
+                        <span>R$ ${parseFloat((p.total || 0)).toFixed(2)}</span>
                     </div>
                     <div style="margin-top:5px;">Pagamento: ${p.metodo_pagamento || '---'}</div>
                     ${p.troco_para ? `<div>Troco para: ${p.troco_para}</div>` : ''}
                     ${p.observacoes ? `<div class="line"></div><div class="bold">OBS GERAL: ${p.observacoes}</div>` : ''}
-                    
                     <div class="center" style="margin-top: 30px;">.</div>
                 <\/body>
                 <\/html>
             `);
             janela.document.close();
-            
-            setTimeout(() => {
-                janela.focus();
-                janela.print();
-            }, 1000);
+
+            setTimeout(() => { janela.focus(); janela.print(); }, 800);
         }
 
         function enviarCobrancaPix(p) {
