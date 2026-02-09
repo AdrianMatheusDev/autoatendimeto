@@ -373,7 +373,12 @@
                     let itens = []; try { itens = JSON.parse(p.itens || '[]'); } catch(e) {}
                     const resumoItens = itens.map(i => `<span class="inline-block bg-zinc-800 rounded px-2 py-1 text-xs text-zinc-300 mr-1 mb-1">${i.nome}</span>`).join('');
                     const statusPagamento = p.status_pagamento === 'pago' ? '<span class="text-green-400 font-bold text-xs"><i class="fa-solid fa-check"></i> Pago</span>' : '<span class="text-zinc-500 text-xs">Pendente</span>';
-                    return `<tr class="border-b border-zinc-800 hover:bg-zinc-800/20 transition"><td class="p-4 text-zinc-400 font-mono text-xs">${new Date(p.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td><td class="p-4"><div class="text-white font-bold text-sm">${p.cliente}</div><div class="text-xs text-zinc-500">${p.tipo_entrega === 'mesa' ? 'Mesa ' + p.mesa : 'Delivery'}</div></td><td class="p-4">${resumoItens}</td><td class="p-4">${statusPagamento}</td><td class="p-4 text-green-400 font-bold text-sm">R$ ${parseFloat(p.total).toFixed(2)}</td></tr>`;
+                    // recalcula total a partir dos itens para evitar exibir valores armazenados incorretos
+                    let totalFromItems = 0;
+                    try { (itens || []).forEach(i => { totalFromItems += (parseFloat(i.preco || 0) * (parseInt(i.quantity || i.qtd || 1, 10) || 1)); }); } catch(e) { totalFromItems = parseFloat(p.total) || 0; }
+                    const registrado = parseFloat(p.total || 0) || 0;
+                    const totalParaExibir = (p.tipo_entrega === 'delivery' && registrado > totalFromItems + 0.001) ? registrado : totalFromItems;
+                    return `<tr class="border-b border-zinc-800 hover:bg-zinc-800/20 transition"><td class="p-4 text-zinc-400 font-mono text-xs">${new Date(p.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td><td class="p-4"><div class="text-white font-bold text-sm">${p.cliente}</div><div class="text-xs text-zinc-500">${p.tipo_entrega === 'mesa' ? 'Mesa ' + p.mesa : 'Delivery'}</div></td><td class="p-4">${resumoItens}</td><td class="p-4">${statusPagamento}</td><td class="p-4 text-green-400 font-bold text-sm">R$ ${totalParaExibir.toFixed(2)}</td></tr>`;
                 }).join('');
             } catch (e) { console.error(e); tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-red-500">Erro ao carregar histórico.</td></tr>'; }
         }
@@ -401,8 +406,24 @@
                 container.innerHTML = `<div class="col-span-full text-center text-zinc-600 py-10"><i class="fa-solid fa-check-circle text-4xl mb-3"></i><br>Tudo limpo!</div>`;
                 return;
             }
+            function calcularTotalPorItens(itens, tipo_entrega, totalRegistrado) {
+                let soma = 0;
+                try {
+                    (itens || []).forEach(i => {
+                        const q = parseInt(i.quantity || i.qtd || 1, 10) || 1;
+                        const preco = parseFloat(i.preco || 0) || 0;
+                        soma += preco * q;
+                    });
+                } catch (e) { soma = 0; }
+                const registrado = parseFloat(totalRegistrado || 0) || 0;
+                // Se for delivery e o total registrado for maior (provavelmente inclui taxa), preserve o registrado
+                if (String(tipo_entrega).toLowerCase() === 'delivery' && registrado > soma + 0.001) return registrado;
+                return soma;
+            }
+
             container.innerHTML = pedidos.map(p => {
                 let itens = []; try { itens = JSON.parse(p.itens || '[]'); } catch(e) {}
+                const totalFromItems = calcularTotalPorItens(itens, p.tipo_entrega, p.total);
                 
                 const listaItens = itens.map(i => {
                     // TENTA PEGAR A CATEGORIA DO ITEM OU USA O MAPA OU ADIVINHA (CORREÇÃO ESFIHA)
@@ -423,14 +444,11 @@
                     }
                     if(i.obs) detalhes += `<div class="text-[10px] text-yellow-500 pl-2 mt-1 italic">Obs: ${i.obs}</div>`;
 
-                    // --- CÁLCULO DO PREÇO DA LINHA ---
-                    let precoItemBase = parseFloat(i.preco || 0);
-                    let precoAdicionais = 0;
-                    if(i.adicionais) {
-                        i.adicionais.forEach(a => precoAdicionais += parseFloat(a.preco || 0));
-                    }
-                    let totalLinha = (precoItemBase + precoAdicionais) * (i.quantity || 1);
-                    // ---------------------------------
+                    // --- CÁLCULO DO PREÇO DA LINHA (preco já inclui adicionais) ---
+                    const quantidadeItem = parseInt(i.quantity || 1, 10) || 1;
+                    const precoItemTotal = parseFloat(i.preco || 0);
+                    const totalLinha = precoItemTotal * quantidadeItem;
+                    // ---------------------------------------------------------------
 
                     return `<li class="text-sm border-b border-zinc-800 py-2 last:border-0">
                         <div class="flex flex-col w-full">
@@ -452,7 +470,7 @@
                 }).join('');
 
                 const cardBorder = p.chamado_conta ? 'border-red-500 blink shadow-red-900/20' : 'border-zinc-700';
-                const totalPedido = parseFloat(p.total || 0).toFixed(2);
+                const totalPedido = parseFloat(totalFromItems || 0).toFixed(2);
                 let badgePagamento = p.status_pagamento === 'pago' ? `<div class="flex items-center gap-1 text-green-400 bg-green-900/30 px-2 py-1 rounded text-xs font-bold border border-green-800"><i class="fa-solid fa-check-circle"></i> PAGO</div>` : `<div class="flex items-center gap-1 text-zinc-500 bg-zinc-800 px-2 py-1 rounded text-xs font-bold border border-zinc-700">A RECEBER</div>`;
                 const isPreparando = p.status === 'preparando';
                 const isPago = p.status_pagamento === 'pago';
@@ -462,13 +480,13 @@
                 let btnWhatsApp = '';
                 if (p.tipo_entrega === 'delivery') {
                     btnWhatsApp = `
-                        <button onclick='enviarMensagemEntrega(${JSON.stringify(p)})' class="col-span-2 bg-yellow-600 hover:bg-yellow-500 text-white py-2 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2 mt-1">
+                        <button onclick='enviarMensagemEntrega(${JSON.stringify(p)}, ${totalFromItems})' class="col-span-2 bg-yellow-600 hover:bg-yellow-500 text-white py-2 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2 mt-1">
                             <i class="fa-brands fa-whatsapp"></i> SAIU PRA ENTREGA
                         </button>
                     `;
                 } else if (p.tipo_entrega === 'mesa') {
                     btnWhatsApp = `
-                        <button onclick='enviarMensagemProntoMesa(${JSON.stringify(p)})' class="col-span-2 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2 mt-1 text-[10px]">
+                        <button onclick='enviarMensagemProntoMesa(${JSON.stringify(p)}, ${totalFromItems})' class="col-span-2 bg-blue-600 hover:bg-blue-500 text-white py-2 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2 mt-1 text-[10px]">
                             <i class="fa-brands fa-whatsapp"></i> PEDIDO PRONTO (AVISAR MESA)
                         </button>
                     `;
@@ -476,8 +494,9 @@
                 
                 let btnCobranca = '';
                 if (!isPago && p.telefone) {
+                    // passa o total recalculado no onclick para garantir valor correto
                     btnCobranca = `
-                        <button onclick='enviarCobrancaPix(${JSON.stringify(p)})' class="col-span-2 bg-teal-700 hover:bg-teal-600 text-white py-2 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2 mt-1 text-xs border border-teal-500">
+                        <button onclick='enviarCobrancaPix(${JSON.stringify(p)}, ${totalFromItems})' class="col-span-2 bg-teal-700 hover:bg-teal-600 text-white py-2 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2 mt-1 text-xs border border-teal-500">
                             <i class="fa-brands fa-pix"></i> COBRAR NO WHATSAPP
                         </button>
                     `;
@@ -539,11 +558,7 @@
             const listaHTML = itens.map(i => {
                 const quantidade = parseInt(i.quantity || i.qtd || 1, 10) || 1;
                 const precoItemBase = parsePreco(i.preco);
-                let precoAdicionais = 0;
-                if (i.adicionais && Array.isArray(i.adicionais)) {
-                    i.adicionais.forEach(a => precoAdicionais += parsePreco(a.preco));
-                }
-                const totalLinha = (precoItemBase + precoAdicionais) * quantidade;
+                const totalLinha = precoItemBase * quantidade;
 
                 const nomeLinha = `${quantidade}x ${i.nome || ''} ${i.tamanho || ''}`.trim();
                 const adicionaisTxt = (i.adicionais && i.adicionais.length) ? `+ ${i.adicionais.map(a => a.nome).join(', ')}` : '';
@@ -555,6 +570,14 @@
                         <div style="min-width:70px; text-align:right; font-weight:bold; margin-left:8px;">R$ ${totalLinha.toFixed(2)}</div>
                     </div>`;
             }).join('');
+
+            const totalFromItems = itens.reduce((acc, i) => {
+                const q = parseInt(i.quantity || i.qtd || 1, 10) || 1;
+                const pbase = parsePreco(i.preco);
+                return acc + pbase * q;
+            }, 0);
+            const registrado = parseFloat(p.total || 0) || 0;
+            const computedTotal = (String(p.tipo_entrega).toLowerCase() === 'delivery' && registrado > totalFromItems + 0.001) ? registrado : totalFromItems;
 
             const janela = window.open('', '', 'width=350,height=600');
             janela.document.write(`
@@ -589,7 +612,7 @@
                     <div class="line"></div>
                     <div style="display:flex; justify-content:space-between; align-items:center; font-weight:bold; font-size:14px;">
                         <span>TOTAL:</span>
-                        <span>R$ ${parseFloat((p.total || 0)).toFixed(2)}</span>
+                        <span>R$ ${computedTotal.toFixed(2)}</span>
                     </div>
                     <div style="margin-top:5px;">Pagamento: ${p.metodo_pagamento || '---'}</div>
                     ${p.troco_para ? `<div>Troco para: ${p.troco_para}</div>` : ''}
@@ -603,15 +626,17 @@
             setTimeout(() => { janela.focus(); janela.print(); }, 800);
         }
 
-        function enviarCobrancaPix(p) {
+        function enviarCobrancaPix(p, computedTotal) {
             if(!CHAVE_PIX_LOJA) return alert("Cadastre a Chave Pix nas configurações primeiro!");
-            
+
             const fone = p.telefone ? p.telefone.replace(/\D/g, '') : '';
             if (!fone) return alert('Cliente não informou o telefone!');
-            
+
+            const totalToUse = (typeof computedTotal !== 'undefined' && !isNaN(parseFloat(computedTotal))) ? parseFloat(computedTotal) : parseFloat(p.total || 0);
+
             const msg = window.encodeURIComponent(
                 `Olá *${p.cliente}*! 👋\n\n` +
-                `Seu pedido deu o total de: *R$ ${parseFloat(p.total).toFixed(2)}*.\n\n` +
+                `Seu pedido deu o total de: *R$ ${totalToUse.toFixed(2)}*.\n\n` +
                 `Para agilizar, você pode pagar via Pix:\n` +
                 `🔑 Chave: *${CHAVE_PIX_LOJA}*\n\n` +
                 `Assim que fizer, me manda o comprovante por aqui? Obrigado! `
@@ -619,14 +644,15 @@
             window.open(`https://api.whatsapp.com/send?phone=55${fone}&text=${msg}`, '_blank');
         }
 
-        function enviarMensagemEntrega(pedido) {
+        function enviarMensagemEntrega(pedido, computedTotal) {
             const fone = pedido.telefone ? pedido.telefone.replace(/\D/g, '') : '';
             if (!fone) return alert('Cliente não informou o telefone!');
-            const msg = window.encodeURIComponent(`Olá *${pedido.cliente}*! 🛵\n\nSeu pedido acabou de sair para entrega! Em instantes estará aí.\n\n*Total:* R$ ${parseFloat(pedido.total).toFixed(2)}\n\nObrigado pela preferência! `);
+            const totalToUse = (typeof computedTotal !== 'undefined' && !isNaN(parseFloat(computedTotal))) ? parseFloat(computedTotal) : parseFloat(pedido.total || 0);
+            const msg = window.encodeURIComponent(`Olá *${pedido.cliente}*! 🛵\n\nSeu pedido acabou de sair para entrega! Em instantes estará aí.\n\n*Total:* R$ ${totalToUse.toFixed(2)}\n\nObrigado pela preferência! `);
             window.open(`https://api.whatsapp.com/send?phone=55${fone}&text=${msg}`, '_blank');
         }
 
-        function enviarMensagemProntoMesa(pedido) {
+        function enviarMensagemProntoMesa(pedido, computedTotal) {
             const fone = pedido.telefone ? pedido.telefone.replace(/\D/g, '') : '';
             if (!fone) return alert('Cliente não informou o telefone!');
             const msg = window.encodeURIComponent(`Olá *${pedido.cliente}*! 🍽️\n\nSeu pedido da *Mesa ${pedido.mesa}* já está pronto e sendo levado até você!\n\nBom apetite! 😊`);
