@@ -560,14 +560,24 @@
                 const precoItemBase = parsePreco(i.preco);
                 const totalLinha = precoItemBase * quantidade;
 
-                const nomeLinha = `${quantidade}x ${i.nome || ''} ${i.tamanho || ''}`.trim();
-                const adicionaisTxt = (i.adicionais && i.adicionais.length) ? `+ ${i.adicionais.map(a => a.nome).join(', ')}` : '';
-                const obsTxt = i.obs ? `OBS: ${i.obs}` : '';
+                // montagem enxuta do nome para papel estreito
+                let nomeLinha = `${quantidade}x ${i.nome || ''} ${i.tamanho || ''}`.trim();
+                if (nomeLinha.length > 36) nomeLinha = nomeLinha.slice(0,33) + '...';
+                let adicionaisTxt = '';
+                if (i.adicionais && i.adicionais.length) {
+                    adicionaisTxt = i.adicionais.map(a => a.nome).join(', ');
+                    if (adicionaisTxt.length > 40) adicionaisTxt = adicionaisTxt.slice(0,37) + '...';
+                }
+                const obsTxt = i.obs ? (String(i.obs).length > 40 ? String(i.obs).slice(0,37)+'...' : i.obs) : '';
 
                 return `
-                    <div style="border-bottom: 1px dashed #ccc; padding-bottom: 5px; margin-bottom: 5px; display:flex; justify-content:space-between; align-items:center;">
-                        <div style="font-weight: bold; font-size:13px; flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${nomeLinha} ${adicionaisTxt ? '<span style="font-weight:normal; font-size:11px;"> - '+adicionaisTxt+'</span>' : ''} ${obsTxt ? '<span style="display:block; font-size:11px; font-weight:normal;">'+obsTxt+'</span>' : ''}</div>
-                        <div style="min-width:70px; text-align:right; font-weight:bold; margin-left:8px;">R$ ${totalLinha.toFixed(2)}</div>
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; padding:6px 0; border-bottom: 1px dashed #ccc;">
+                        <div style="flex:1; font-size:12px; line-height:1.1; overflow-wrap:break-word;">
+                            <div style="font-weight:bold;">${nomeLinha}</div>
+                            ${adicionaisTxt ? `<div style="font-size:11px; color:#333;">+ ${adicionaisTxt}</div>` : ''}
+                            ${obsTxt ? `<div style="font-size:11px; color:#333;">${obsTxt}</div>` : ''}
+                        </div>
+                        <div style="width:70px; text-align:right; font-weight:bold; margin-left:8px;">R$ ${totalLinha.toFixed(2)}</div>
                     </div>`;
             }).join('');
 
@@ -585,39 +595,39 @@
                 <head>
                     <title>Comanda #${(p.id || '').toString().slice(0, 8)}</title>
                     <style>
-                        @page { margin: 0; }
-                        body { font-family: 'Courier New', monospace; width: 100%; max-width: 300px; padding: 10px; font-size: 12px; margin: 0 auto; color: #000; }
+                        @page { margin: 0; size: 80mm; }
+                        body { font-family: Arial, Helvetica, sans-serif; width: 220px; max-width: 220px; padding: 8px; font-size: 12px; margin: 0 auto; color: #000; }
                         .center { text-align: center; }
                         .bold { font-weight: bold; }
-                        .line { border-bottom: 1px dashed #000; margin: 8px 0; }
-                        .big { font-size: 16px; }
-                        .flex-between { display: flex; justify-content: space-between; }
-                        /* Garante que o preço não quebre de linha e fique visível */
-                        .price { min-width:70px; text-align:right; }
+                        .line { border-bottom: 1px dashed #000; margin: 6px 0; }
+                        .small { font-size:11px; }
+                        .muted { color:#444; font-size:11px; }
+                        .items { margin-top:6px; }
+                        .footer { margin-top:8px; font-size:12px; }
+                        .nowrap-ellipsis { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
                     <\/style>
                 </head>
                 <body>
-                    <div class="center bold big">BLACK PIANO</div>
-                    <div class="center" style="font-size:10px;">Pedido: #${(p.id || '').toString().slice(0, 8)}</div>
+                    <div class="center bold" style="font-size:14px;">BLACK PIANO</div>
+                    <div class="center small">Pedido: #${(p.id || '').toString().slice(0, 8)}</div>
                     <div class="line"></div>
-                    <div class="bold big center">${(p.tipo_entrega || '').toUpperCase() === 'MESA' ? 'MESA ' + (p.mesa || '') : 'DELIVERY'}</div>
-                    <div class="center">${p.created_at ? new Date(p.created_at).toLocaleString() : new Date().toLocaleString()}</div>
+                    <div class="center small">${(p.tipo_entrega || '').toUpperCase() === 'MESA' ? 'MESA ' + (p.mesa || '') : 'DELIVERY'}</div>
+                    <div class="center muted small">${p.created_at ? new Date(p.created_at).toLocaleString() : new Date().toLocaleString()}</div>
                     <div class="line"></div>
-                    <div class="bold">CLIENTE: ${p.cliente || ''}</div>
-                    ${p.telefone ? `<div>Tel: ${p.telefone}</div>` : ''}
-                    ${p.endereco ? `<div>End: ${p.endereco}</div>` : ''}
+                    ${p.cliente ? `<div class="bold small">${(String(p.cliente).length>24?String(p.cliente).slice(0,21)+'...':p.cliente)}</div>` : ''}
+                    ${p.telefone ? `<div class="muted small">Tel: ${p.telefone}</div>` : ''}
                     <div class="line"></div>
-                    <div style="margin-bottom: 5px;" class="bold">ITENS:</div>
-                    ${listaHTML}
+                    <div class="bold small">ITENS</div>
+                    <div class="items">${listaHTML}</div>
                     <div class="line"></div>
-                    <div style="display:flex; justify-content:space-between; align-items:center; font-weight:bold; font-size:14px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; font-weight:bold; font-size:13px;">
                         <span>TOTAL:</span>
                         <span>R$ ${computedTotal.toFixed(2)}</span>
                     </div>
-                    <div style="margin-top:5px;">Pagamento: ${p.metodo_pagamento || '---'}</div>
-                    ${p.troco_para ? `<div>Troco para: ${p.troco_para}</div>` : ''}
-                    ${p.observacoes ? `<div class="line"></div><div class="bold">OBS GERAL: ${p.observacoes}</div>` : ''}
-                    <div class="center" style="margin-top: 30px;">.</div>
+                    <div class="footer small">Pagamento: ${p.metodo_pagamento || '---'}</div>
+                    ${p.troco_para ? `<div class="small">Troco para: ${p.troco_para}</div>` : ''}
+                    ${p.observacoes ? `<div class="line"></div><div class="small">OBS: ${String(p.observacoes).slice(0,80)}</div>` : ''}
+                    <div style="height:18px;"></div>
                 <\/body>
                 <\/html>
             `);
