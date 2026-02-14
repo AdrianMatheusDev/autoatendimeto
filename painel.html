@@ -378,7 +378,8 @@
                     try { (itens || []).forEach(i => { totalFromItems += (parseFloat(i.preco || 0) * (parseInt(i.quantity || i.qtd || 1, 10) || 1)); }); } catch(e) { totalFromItems = parseFloat(p.total) || 0; }
                     const registrado = parseFloat(p.total || 0) || 0;
                     const totalParaExibir = (p.tipo_entrega === 'delivery' && registrado > totalFromItems + 0.001) ? registrado : totalFromItems;
-                    return `<tr class="border-b border-zinc-800 hover:bg-zinc-800/20 transition"><td class="p-4 text-zinc-400 font-mono text-xs">${new Date(p.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td><td class="p-4"><div class="text-white font-bold text-sm">${p.cliente}</div><div class="text-xs text-zinc-500">${p.tipo_entrega === 'mesa' ? 'Mesa ' + p.mesa : 'Delivery'}</div></td><td class="p-4">${resumoItens}</td><td class="p-4">${statusPagamento}</td><td class="p-4 text-green-400 font-bold text-sm">R$ ${totalParaExibir.toFixed(2)}</td></tr>`;
+                    const tipoEntregaTexto = p.tipo_entrega === 'mesa' ? 'Mesa ' + p.mesa : p.tipo_entrega === 'retirada' ? 'Retirada' : 'Delivery';
+                    return `<tr class="border-b border-zinc-800 hover:bg-zinc-800/20 transition"><td class="p-4 text-zinc-400 font-mono text-xs">${new Date(p.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td><td class="p-4"><div class="text-white font-bold text-sm">${p.cliente}</div><div class="text-xs text-zinc-500">${tipoEntregaTexto}</div></td><td class="p-4">${resumoItens}</td><td class="p-4">${statusPagamento}</td><td class="p-4 text-green-400 font-bold text-sm">R$ ${totalParaExibir.toFixed(2)}</td></tr>`;
                 }).join('');
             } catch (e) { console.error(e); tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-red-500">Erro ao carregar histórico.</td></tr>'; }
         }
@@ -490,6 +491,12 @@
                             <i class="fa-brands fa-whatsapp"></i> PEDIDO PRONTO (AVISAR MESA)
                         </button>
                     `;
+                } else if (p.tipo_entrega === 'retirada') {
+                    btnWhatsApp = `
+                        <button onclick='enviarMensagemProntoRetirada(${JSON.stringify(p)}, ${totalFromItems})' class="col-span-2 bg-purple-600 hover:bg-purple-500 text-white py-2 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2 mt-1 text-[10px]">
+                            <i class="fa-brands fa-whatsapp"></i> PRONTO PRA RETIRADA
+                        </button>
+                    `;
                 }
                 
                 let btnCobranca = '';
@@ -507,7 +514,7 @@
                     <div>
                         ${p.chamado_conta ? `<div class="bg-red-500 text-white text-center font-bold p-2 mb-3 animate-pulse rounded text-xs shadow-lg uppercase tracking-wider"><i class="fa-solid fa-bell"></i> Cliente Pedindo a Conta</div>` : ''}
                         <div class="flex justify-between items-start mb-4 pb-3 border-b border-zinc-800">
-                            <div><h3 class="font-bold text-xl text-white flex items-center gap-2">${p.tipo_entrega === 'mesa' ? '<i class="fa-solid fa-chair text-zinc-500"></i> Mesa ' + p.mesa : '<i class="fa-solid fa-motorcycle text-zinc-500"></i> Delivery'}</h3><p class="text-sm text-zinc-400 mt-1 font-medium">${p.cliente}</p></div>
+                            <div><h3 class="font-bold text-xl text-white flex items-center gap-2">${p.tipo_entrega === 'mesa' ? '<i class="fa-solid fa-chair text-zinc-500"></i> Mesa ' + p.mesa : p.tipo_entrega === 'retirada' ? '<i class="fa-solid fa-bag-shopping text-purple-500"></i> Retirada' : '<i class="fa-solid fa-motorcycle text-zinc-500"></i> Delivery'}</h3><p class="text-sm text-zinc-400 mt-1 font-medium">${p.cliente}</p></div>
                             <span class="text-xs bg-zinc-800 px-2 py-1 rounded text-zinc-500 font-mono border border-zinc-700">${new Date(p.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                         </div>
                         <div class="mb-4"><span class="text-[10px] uppercase font-bold text-zinc-500">Status:</span> <span class="text-[10px] uppercase font-bold ${isPreparando ? 'text-yellow-500' : 'text-blue-500'}">${p.status}</span></div>
@@ -611,7 +618,7 @@
                     <div class="center bold" style="font-size:14px;">COMANDA</div>
                     <div class="center small">Pedido: #${(p.id || '').toString().slice(0, 8)}</div>
                     <div class="line"></div>
-                    <div class="center small">${(p.tipo_entrega || '').toUpperCase() === 'MESA' ? 'MESA ' + (p.mesa || '') : 'DELIVERY'}</div>
+                    <div class="center small">${(p.tipo_entrega || '').toUpperCase() === 'MESA' ? 'MESA ' + (p.mesa || '') : (p.tipo_entrega || '').toUpperCase() === 'RETIRADA' ? 'RETIRADA' : 'DELIVERY'}</div>
                     <div class="center muted small">${p.created_at ? new Date(p.created_at).toLocaleString() : new Date().toLocaleString()}</div>
                     <div class="line"></div>
                     ${p.cliente ? `<div class="bold small">${(String(p.cliente).length>24?String(p.cliente).slice(0,21)+'...':p.cliente)}</div>` : ''}
@@ -666,6 +673,13 @@
             const fone = pedido.telefone ? pedido.telefone.replace(/\D/g, '') : '';
             if (!fone) return alert('Cliente não informou o telefone!');
             const msg = window.encodeURIComponent(`Olá *${pedido.cliente}*! 🍽️\n\nSeu pedido da *Mesa ${pedido.mesa}* já está pronto e sendo levado até você!\n\nBom apetite! 😊`);
+            window.open(`https://api.whatsapp.com/send?phone=55${fone}&text=${msg}`, '_blank');
+        }
+
+        function enviarMensagemProntoRetirada(pedido, computedTotal) {
+            const fone = pedido.telefone ? pedido.telefone.replace(/\D/g, '') : '';
+            if (!fone) return alert('Cliente não informou o telefone!');
+            const msg = window.encodeURIComponent(`Olá *${pedido.cliente}*! 🛍️\n\nSeu pedido está pronto para retirada no balcão!\n\nTotal: R$ ${computedTotal.toFixed(2)}\n\nObrigado! 😊`);
             window.open(`https://api.whatsapp.com/send?phone=55${fone}&text=${msg}`, '_blank');
         }
 
