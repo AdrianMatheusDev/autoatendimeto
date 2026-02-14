@@ -152,10 +152,11 @@
                         <input type="tel" id="input-tel" class="w-full bg-zinc-800 border border-zinc-700 rounded p-2 text-white outline-none focus:border-yellow-500 text-sm" placeholder="(00) 00000-0000">
                     </div>
                     
-                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Entrega</label>
-                    <div class="grid grid-cols-2 gap-2">
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Entrega / Retirada</label>
+                    <div class="grid grid-cols-3 gap-2">
                         <button onclick="setDeliveryType('mesa')" id="btn-mesa" class="p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 font-medium text-sm">Na Mesa</button>
                         <button onclick="setDeliveryType('delivery')" id="btn-delivery" class="p-2 rounded border border-zinc-700 text-gray-400 text-sm">Delivery</button>
+                        <button onclick="setDeliveryType('retirada')" id="btn-retirada" class="p-2 rounded border border-zinc-700 text-gray-400 text-sm">Retirada</button>
                     </div>
 
                     <div id="area-mesa">
@@ -240,7 +241,7 @@
         let produtoSelecionadoAtual = null;
         let tamanhoSelecionado = null;
         let adicionaisSelecionados = [];
-        let segundoSaborSelecionado = null; // Novo para pizza
+        let segundoSaborSelecionado = null; 
 
         document.addEventListener('DOMContentLoaded', async () => {
             await carregarLoja();
@@ -407,7 +408,7 @@
             if(prod.categoria.toLowerCase().includes('pizza')) {
                 areaPizza.classList.remove('hidden');
                 checkPizza.checked = false;
-                checkPizza.disabled = false; // garante que o checkbox esteja habilitado ao abrir
+                checkPizza.disabled = false; 
                 document.getElementById('container-select-sabor').classList.add('hidden');
                 selectPizza.value = "";
                 segundoSaborSelecionado = null;
@@ -476,7 +477,7 @@
                     segundoSaborSelecionado = null;
                 } else {
                     const check = document.getElementById('check-meio-a-meio');
-                    if (check) check.disabled = false; // re-habilita para outros tamanhos
+                    if (check) check.disabled = false; 
                 }
             } catch (e) {
                 console.warn('Erro ao aplicar regra cone/meio-a-meio', e);
@@ -535,7 +536,6 @@
             if (tamanhoSelecionado) {
                 let preco1 = parseFloat(tamanhoSelecionado.preco);
                 if (segundoSaborSelecionado) {
-                    // Tenta achar o MESMO tamanho na Pizza 2
                     const variacaoSabor2 = segundoSaborSelecionado.variacoes.find(v => v.nome === tamanhoSelecionado.nome);
                     if (variacaoSabor2) {
                         let preco2 = parseFloat(variacaoSabor2.preco);
@@ -561,7 +561,6 @@
         function confirmarAdicaoCarrinho() {
             if(!produtoSelecionadoAtual) return;
             
-            // Recalcula para garantir
             let precoFinal = 0;
             
             if (tamanhoSelecionado) {
@@ -589,6 +588,7 @@
                 id: produtoSelecionadoAtual.id,
                 nome: nomeFinal,
                 preco: precoFinal,
+                quantity: 1,
                 tamanho: tamanhoSelecionado && tamanhoSelecionado.nome ? tamanhoSelecionado.nome : null,
                 adicionais: adicionaisSelecionados,
                 obs: obs,
@@ -603,7 +603,7 @@
         }
 
         function updateCartUI() {
-            const totalProdutos = cart.reduce((a,b)=>a+b.preco,0);
+            const totalProdutos = cart.reduce((a,b)=> a + (parseFloat(b.preco || 0) * (parseInt(b.quantity || 1, 10) || 1)), 0);
             const totalFinal = totalProdutos + (deliveryType === 'delivery' ? taxaEntregaAtual : 0);
             document.getElementById('cart-total').innerText = 'R$ ' + totalFinal.toFixed(2);
             document.getElementById('cart-count').innerText = cart.length;
@@ -634,7 +634,6 @@
             if(cart.length === 0) closeCheckout();
         }
 
-        // --- FUNÇÃO NOVA: Mostrar/Esconder campo de Troco ---
         function toggleTroco(show) {
             const area = document.getElementById('area-troco');
             const input = document.getElementById('input-troco');
@@ -642,8 +641,32 @@
                 area.classList.remove('hidden');
             } else {
                 area.classList.add('hidden');
-                input.value = ''; // Limpa o valor se trocar para Pix/Cartão
+                input.value = ''; 
             }
+        }
+
+        function setDeliveryType(t) {
+            deliveryType = t;
+            
+            document.getElementById('area-mesa').classList.toggle('hidden', t !== 'mesa');
+            document.getElementById('area-delivery').classList.toggle('hidden', t !== 'delivery');
+            
+            const classAtivo = "p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 text-sm font-bold";
+            const classInativo = "p-2 rounded border border-zinc-700 text-gray-400 text-sm";
+            
+            document.getElementById('btn-mesa').className = t === 'mesa' ? classAtivo : classInativo;
+            document.getElementById('btn-delivery').className = t === 'delivery' ? classAtivo : classInativo;
+            document.getElementById('btn-retirada').className = t === 'retirada' ? classAtivo : classInativo;
+
+            if (t === 'mesa' || t === 'retirada') { 
+                taxaEntregaAtual = 0; 
+                document.getElementById('aviso-taxa').classList.add('hidden');
+                document.getElementById('resumo-taxa').classList.add('hidden');
+            } else { 
+                atualizarTaxaEntrega(); 
+            }
+            
+            updateCartUI();
         }
 
         async function processarPedido() {
@@ -651,12 +674,11 @@
             const nome = document.getElementById('input-nome').value;
             const telefone = document.getElementById('input-tel').value;
             const mesa = document.getElementById('input-mesa').value;
-            // Pega o valor do radio selecionado
             const radioPagamento = document.querySelector('input[name="pagamento"]:checked');
             const metodoPagamento = radioPagamento ? radioPagamento.value : 'pix';
 
             if (!nome) return alert('Informe seu nome.');
-            if (!telefone) return alert('Informe seu WhatsApp para avisarmos sobre o pedido.');
+            if (!telefone) return alert('Informe seu WhatsApp.');
             
             let enderecoFinal = "";
             let taxaAplicada = 0;
@@ -670,23 +692,24 @@
                 const ref = document.getElementById('delivery-ref').value;
 
                 if (!rua || !num || !bairroDigitado) return alert('Preencha rua, número e bairro.');
-                if (taxaEntregaAtual === 0 && selectTaxa.value === "") return alert('Selecione a região de entrega para calcular a taxa.');
+                if (taxaEntregaAtual === 0 && selectTaxa.value === "") return alert('Selecione a região de entrega.');
                 
-                enderecoFinal = `Rua: ${rua}, Nº: ${num}, Bairro: ${bairroDigitado} | Ref: ${ref}`;
-                enderecoFinal += ` | Região Selecionada: ${nomeRegiaoTaxa}`;
+                enderecoFinal = `Rua: ${rua}, Nº: ${num}, Bairro: ${bairroDigitado} | Ref: ${ref} | Região: ${nomeRegiaoTaxa}`;
                 taxaAplicada = taxaEntregaAtual;
-            } else {
+
+            } else if (deliveryType === 'mesa') {
                 if (!mesa) return alert('Informe o número da mesa.');
+                taxaAplicada = 0;
+            } else if (deliveryType === 'retirada') {
+                enderecoFinal = "RETIRADA NO BALCÃO";
                 taxaAplicada = 0;
             }
 
-            // --- LÓGICA DE PAGAMENTO E TROCO ATUALIZADA ---
             let stringPagamento = metodoPagamento === 'cartao' ? 'Cartão' : 'Pix';
-            
             if (metodoPagamento === 'dinheiro') {
                 const valorTroco = document.getElementById('input-troco').value;
                 if (!valorTroco) {
-                    if(!confirm('Você selecionou Dinheiro mas não informou para quanto é o troco. O entregador não levará troco. Deseja continuar?')) return;
+                    if(!confirm('Sem troco informado. Continuar?')) return;
                     stringPagamento = 'Dinheiro (Sem troco)';
                 } else {
                     stringPagamento = `Dinheiro (Troco p/ R$ ${valorTroco})`;
@@ -696,7 +719,11 @@
             const btn = document.getElementById('btn-confirmar');
             btn.disabled = true; btn.innerText = "Enviando...";
 
-            const totalProdutos = cart.reduce((acc, item) => acc + item.preco, 0);
+            const totalProdutos = cart.reduce((acc, item) => {
+                const qty = parseInt(item.quantity || 1, 10) || 1;
+                const precoFinal = parseFloat(item.preco || 0);
+                return acc + precoFinal * qty;
+            }, 0);
             const totalComTaxa = totalProdutos + taxaAplicada;
 
             try {
@@ -704,18 +731,18 @@
                     restaurante_slug: LOJA_SLUG,
                     cliente: nome,
                     mesa: deliveryType === 'mesa' ? mesa : null,
-                    tipo_entrega: deliveryType,
+                    tipo_entrega: deliveryType, 
                     itens: JSON.stringify(cart),
                     observacoes: enderecoFinal,
                     telefone: telefone,
                     total: totalComTaxa, 
                     status: 'pendente',
                     status_pagamento: 'pendente',
-                    metodo_pagamento: stringPagamento // Envia a string formatada
+                    metodo_pagamento: stringPagamento
                 });
 
                 if (error) throw error;
-                alert('Pedido enviado para a cozinha!');
+                alert('Pedido enviado com sucesso!');
                 
                 localStorage.setItem('rest_nome', nome);
                 localStorage.setItem('rest_tel', telefone);
@@ -736,15 +763,6 @@
 
         function openCheckout() { document.getElementById('modal-checkout').classList.remove('hidden'); renderCheckoutItems(); }
         function closeCheckout() { document.getElementById('modal-checkout').classList.add('hidden'); }
-        function setDeliveryType(t) {
-            deliveryType = t;
-            document.getElementById('area-mesa').classList.toggle('hidden', t !== 'mesa');
-            document.getElementById('area-delivery').classList.toggle('hidden', t !== 'delivery');
-            document.getElementById('btn-mesa').className = t==='mesa' ? "p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 text-sm" : "p-2 rounded border border-zinc-700 text-gray-400 text-sm";
-            document.getElementById('btn-delivery').className = t==='delivery' ? "p-2 rounded border border-yellow-500 bg-yellow-500/20 text-yellow-500 text-sm" : "p-2 rounded border border-zinc-700 text-gray-400 text-sm";
-            if (t === 'mesa') { taxaEntregaAtual = 0; } else { atualizarTaxaEntrega(); }
-            updateCartUI();
-        }
 
         function carregarDadosLocais() {
             if(localStorage.getItem('rest_nome')) document.getElementById('input-nome').value = localStorage.getItem('rest_nome');
