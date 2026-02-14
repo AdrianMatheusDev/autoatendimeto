@@ -31,6 +31,9 @@
             background-color: #27272a !important;
         }
         
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 4px; }
+        
         /* Ajuste para iPhone (Safe Area) */
         .pb-safe { padding-bottom: env(safe-area-inset-bottom, 20px); }
     </style>
@@ -113,11 +116,13 @@
                             <th class="p-4">Hora</th>
                             <th class="p-4">Cliente / Mesa</th>
                             <th class="p-4">Itens do Pedido</th>
-                            <th class="p-4">Pagamento</th> <th class="p-4">Total</th>
+                            <th class="p-4">Pagamento</th>
+                            <th class="p-4">Total</th>
+                            <th class="p-4 text-center">Detalhes</th>
                         </tr>
                     </thead>
                     <tbody id="lista-historico" class="divide-y divide-zinc-800/50">
-                        <tr><td colspan="5" class="p-6 text-center">Selecione uma data para ver o histórico.</td></tr>
+                        <tr><td colspan="6" class="p-6 text-center">Selecione uma data para ver o histórico.</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -300,6 +305,96 @@
         </div>
     </div>
 
+    <div id="modal-detalhes-pedido" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+        <div class="bg-zinc-900 w-full max-w-2xl h-[90dvh] sm:h-auto sm:max-h-[90vh] rounded-t-xl sm:rounded-xl border-t sm:border border-zinc-700 shadow-2xl flex flex-col">
+            
+            <div class="p-4 sm:p-6 border-b border-zinc-800 flex justify-between items-center shrink-0">
+                <h3 class="text-lg sm:text-xl font-bold text-white">Detalhes do Pedido</h3>
+                <button onclick="fecharDetalhePedido()" class="text-zinc-500 hover:text-white transition p-2"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            
+            <div class="p-4 sm:p-6 overflow-y-auto custom-scrollbar flex-1">
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-800">
+                            <p class="text-xs text-zinc-500 uppercase font-bold mb-1">Cliente</p>
+                            <p id="detalhe-cliente" class="text-white font-bold text-lg">-</p>
+                        </div>
+                        <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-800">
+                            <p class="text-xs text-zinc-500 uppercase font-bold mb-1">Telefone</p>
+                            <p id="detalhe-telefone" class="text-white font-bold">-</p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-800">
+                            <p class="text-xs text-zinc-500 uppercase font-bold mb-1">Tipo Entrega</p>
+                            <p id="detalhe-tipo" class="text-white font-bold">-</p>
+                        </div>
+                        <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-800">
+                            <p class="text-xs text-zinc-500 uppercase font-bold mb-1">Data/Hora</p>
+                            <p id="detalhe-hora" class="text-white font-bold text-sm">-</p>
+                        </div>
+                        <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-800">
+                            <p class="text-xs text-zinc-500 uppercase font-bold mb-1">N° de Itens</p>
+                            <p id="detalhe-num-itens" class="text-white font-bold text-xl">0</p>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-zinc-800 pt-4">
+                        <h4 class="text-sm font-bold text-white mb-3 uppercase">Itens do Pedido</h4>
+                        <div id="detalhe-itens" class="space-y-3">
+                            <p class="text-zinc-500 text-sm">Nenhum item</p>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-zinc-800 pt-4">
+                        <h4 class="text-sm font-bold text-white mb-3 uppercase">Resumo Financeiro</h4>
+                        <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-800 space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-zinc-400">Subtotal (Itens)</span>
+                                <span id="detalhe-subtotal" class="text-white font-mono font-bold">R$ 0,00</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-zinc-400">Taxa Entrega</span>
+                                <span id="detalhe-taxa" class="text-white font-mono font-bold">R$ 0,00</span>
+                            </div>
+                            <div class="border-t border-zinc-700 pt-2 flex justify-between items-center">
+                                <span class="text-white font-bold">Total</span>
+                                <span id="detalhe-total" class="text-green-400 font-mono font-bold text-lg">R$ 0,00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-zinc-800 pt-4">
+                        <h4 class="text-sm font-bold text-white mb-3 uppercase">Pagamento</h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-800">
+                                <p class="text-xs text-zinc-500 uppercase font-bold mb-1">Método</p>
+                                <p id="detalhe-metodo" class="text-white font-bold">-</p>
+                            </div>
+                            <div class="bg-zinc-950 p-4 rounded-lg border border-zinc-800">
+                                <p class="text-xs text-zinc-500 uppercase font-bold mb-1">Status</p>
+                                <p id="detalhe-status-pag" class="text-white font-bold">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="detalhe-obs-container" class="border-t border-zinc-800 pt-4 hidden">
+                        <h4 class="text-sm font-bold text-white mb-3 uppercase">Observações</h4>
+                        <div class="bg-yellow-900/20 border border-yellow-900/50 p-4 rounded-lg">
+                            <p id="detalhe-obs" class="text-yellow-200 text-sm">-</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 sm:p-6 border-t border-zinc-800 bg-zinc-950 rounded-b-xl flex justify-end gap-3 shrink-0 pb-safe">
+                <button onclick="fecharDetalhePedido()" class="px-4 sm:px-6 py-3 rounded-lg text-zinc-400 hover:bg-zinc-900 transition text-sm font-medium">Fechar</button>
+            </div>
+        </div>
+    </div>
+
     <audio id="audio-notificacao" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
 
     <script>
@@ -355,7 +450,7 @@
             const dateInput = document.getElementById('hist-date').value;
             if (!dateInput) return;
             const tbody = document.getElementById('lista-historico');
-            tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-zinc-500 animate-pulse">Carregando histórico...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-zinc-500 animate-pulse">Carregando histórico...</td></tr>';
             const startDate = `${dateInput}T00:00:00`;
             const endDate = `${dateInput}T23:59:59`;
             try {
@@ -366,7 +461,7 @@
                 document.getElementById('hist-total').innerText = `R$ ${total.toFixed(2)}`;
                 document.getElementById('hist-count').innerText = pedidos.length;
                 if (pedidos.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="p-8 text-center text-zinc-600">Nenhuma venda finalizada nesta data.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-center text-zinc-600">Nenhuma venda finalizada nesta data.</td></tr>';
                     return;
                 }
                 tbody.innerHTML = pedidos.map(p => {
@@ -379,9 +474,91 @@
                     const registrado = parseFloat(p.total || 0) || 0;
                     const totalParaExibir = (p.tipo_entrega === 'delivery' && registrado > totalFromItems + 0.001) ? registrado : totalFromItems;
                     const tipoEntregaTexto = p.tipo_entrega === 'mesa' ? 'Mesa ' + p.mesa : p.tipo_entrega === 'retirada' ? 'Retirada' : 'Delivery';
-                    return `<tr class="border-b border-zinc-800 hover:bg-zinc-800/20 transition"><td class="p-4 text-zinc-400 font-mono text-xs">${new Date(p.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td><td class="p-4"><div class="text-white font-bold text-sm">${p.cliente}</div><div class="text-xs text-zinc-500">${tipoEntregaTexto}</div></td><td class="p-4">${resumoItens}</td><td class="p-4">${statusPagamento}</td><td class="p-4 text-green-400 font-bold text-sm">R$ ${totalParaExibir.toFixed(2)}</td></tr>`;
+                    return `<tr class="border-b border-zinc-800 hover:bg-zinc-800/20 transition"><td class="p-4 text-zinc-400 font-mono text-xs">${new Date(p.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td><td class="p-4"><div class="text-white font-bold text-sm">${p.cliente}</div><div class="text-xs text-zinc-500">${tipoEntregaTexto}</div></td><td class="p-4">${resumoItens}</td><td class="p-4">${statusPagamento}</td><td class="p-4 text-green-400 font-bold text-sm">R$ ${totalParaExibir.toFixed(2)}</td><td class="p-4 text-center"><button onclick='abrirDetalhePedido(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="text-blue-400 hover:text-white bg-blue-900/20 px-3 py-2 rounded text-xs font-bold transition"><i class="fa-solid fa-eye"></i> Ver</button></td></tr>`;
                 }).join('');
-            } catch (e) { console.error(e); tbody.innerHTML = '<tr><td colspan="5" class="p-6 text-center text-red-500">Erro ao carregar histórico.</td></tr>'; }
+            } catch (e) { console.error(e); tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-red-500">Erro ao carregar histórico.</td></tr>'; }
+        }
+
+        function abrirDetalhePedido(pedido) {
+            let itens = [];
+            try {
+                if (typeof pedido.itens === 'string') itens = JSON.parse(pedido.itens || '[]');
+                else if (Array.isArray(pedido.itens)) itens = pedido.itens;
+            } catch (e) { console.error('Erro ao parsear itens:', e); }
+
+            // Preencher informações básicas
+            document.getElementById('detalhe-cliente').innerText = pedido.cliente || '-';
+            document.getElementById('detalhe-telefone').innerText = pedido.telefone || '-';
+            document.getElementById('detalhe-hora').innerText = pedido.created_at ? new Date(pedido.created_at).toLocaleString() : '-';
+            document.getElementById('detalhe-num-itens').innerText = itens.length;
+
+            // Tipo entrega
+            const tipoTexto = pedido.tipo_entrega === 'mesa' ? `Mesa ${pedido.mesa}` : pedido.tipo_entrega === 'retirada' ? 'Retirada no Balcão' : 'Delivery';
+            document.getElementById('detalhe-tipo').innerText = tipoTexto;
+
+            // Renderizar itens
+            const itensHTML = itens.length ? itens.map(i => {
+                const quantidade = parseInt(i.quantity || i.qtd || 1, 10) || 1;
+                const preco = parseFloat(i.preco || 0) || 0;
+                const total = preco * quantidade;
+                let adicionaisTexto = '';
+                if (i.adicionais && i.adicionais.length) {
+                    adicionaisTexto = `<div class="text-xs text-zinc-400 mt-1">+ ${i.adicionais.map(a => a.nome).join(', ')}</div>`;
+                }
+                return `
+                    <div class="bg-zinc-950 p-3 rounded border border-zinc-800">
+                        <div class="flex justify-between items-start mb-1">
+                            <div class="flex-1">
+                                <p class="text-white font-bold text-sm">${quantidade}x ${i.nome}</p>
+                                ${i.tamanho ? `<p class="text-xs text-yellow-400">Tamanho: ${i.tamanho}</p>` : ''}
+                            </div>
+                            <p class="text-green-400 font-bold font-mono text-sm">R$ ${total.toFixed(2)}</p>
+                        </div>
+                        ${adicionaisTexto}
+                        ${i.obs ? `<div class="text-xs text-yellow-500 mt-1 italic">Obs: ${i.obs}</div>` : ''}
+                    </div>
+                `;
+            }).join('') : '<p class="text-zinc-500 text-sm">Nenhum item</p>';
+            
+            document.getElementById('detalhe-itens').innerHTML = itensHTML;
+
+            // Calcular totais
+            let subtotal = 0;
+            try {
+                itens.forEach(i => {
+                    const q = parseInt(i.quantity || i.qtd || 1, 10) || 1;
+                    const p = parseFloat(i.preco || 0) || 0;
+                    subtotal += p * q;
+                });
+            } catch (e) { subtotal = 0; }
+
+            const total = parseFloat(pedido.total || 0) || 0;
+            const taxa = total - subtotal;
+
+            document.getElementById('detalhe-subtotal').innerText = `R$ ${subtotal.toFixed(2)}`;
+            document.getElementById('detalhe-taxa').innerText = `R$ ${Math.max(0, taxa).toFixed(2)}`;
+            document.getElementById('detalhe-total').innerText = `R$ ${total.toFixed(2)}`;
+
+            // Pagamento
+            document.getElementById('detalhe-metodo').innerText = pedido.metodo_pagamento || '-';
+            const statusPag = pedido.status_pagamento === 'pago' ? 'Pago ✓' : 'Pendente';
+            const corStatus = pedido.status_pagamento === 'pago' ? 'text-green-400' : 'text-zinc-400';
+            document.getElementById('detalhe-status-pag').innerHTML = `<span class="${corStatus}">${statusPag}</span>`;
+
+            // Observações
+            const obsContainer = document.getElementById('detalhe-obs-container');
+            if (pedido.observacoes && pedido.observacoes.trim()) {
+                document.getElementById('detalhe-obs').innerText = pedido.observacoes;
+                obsContainer.classList.remove('hidden');
+            } else {
+                obsContainer.classList.add('hidden');
+            }
+
+            document.getElementById('modal-detalhes-pedido').classList.remove('hidden');
+        }
+
+        function fecharDetalhePedido() {
+            document.getElementById('modal-detalhes-pedido').classList.add('hidden');
         }
 
         async function carregarPedidos() {
