@@ -862,14 +862,16 @@
 
         async function mudarStatusPedido(id, novoStatus) { await client.from('pedidos').update({ status: novoStatus }).eq('id', id).eq('restaurante_slug', LOJA_SLUG); carregarPedidos(); }
         async function marcarComoPago(id) { await client.from('pedidos').update({ status_pagamento: 'pago' }).eq('id', id).eq('restaurante_slug', LOJA_SLUG); carregarPedidos(); }
-        async function concluirPedidoGeral(id) { if(!confirm('Deseja realmente finalizar e arquivar este pedido?')) return; await client.from('pedidos').update({ status: 'concluido' }).eq('id', id).eq('restaurante_slug', LOJA_SLUG); carregarPedidos(); carregarFaturamentoDiario(); }
+        async function concluirPedidoGeral(id) { if(!confirm('Deseja realmente finalizar e arquivar este pedido?')) return; await client.from('pedidos').update({ status: 'concluido' }).eq('id', id).eq('restaurante_slug', LOJA_SLUG); carregarPedidos(); carregarFaturamentoDiario(); if(document.getElementById('tab-historico').classList.contains('active')) { carregarHistorico(); } }
 
         function setupRealtime() {
             client.channel('pedidos-realtime').on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos', filter: `restaurante_slug=eq.${LOJA_SLUG}` }, (payload) => {
                 const isNew = payload.eventType === 'INSERT';
                 const isCall = payload.eventType === 'UPDATE' && payload.new.chamado_conta === true && (payload.old ? payload.old.chamado_conta === false : true);
+                const isCompleted = payload.eventType === 'UPDATE' && payload.new.status === 'concluido' && (payload.old ? payload.old.status !== 'concluido' : false);
                 if (isNew || isCall) { tocarSom(); mostrarNotificacaoVisual(isNew ? "Novo Pedido!" : "Mesa Chamando!"); }
                 carregarPedidos(); carregarFaturamentoDiario();
+                if (isCompleted && document.getElementById('tab-historico').classList.contains('active')) { carregarHistorico(); }
             }).subscribe();
         }
 
