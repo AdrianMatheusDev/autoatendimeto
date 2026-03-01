@@ -176,6 +176,17 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-zinc-800">
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-400 mb-2"><i class="fa-solid fa-location-dot text-yellow-500 mr-1"></i> Endereço (exibido no cardápio)</label>
+                            <input type="text" id="cfg-endereco" placeholder="Ex: Rua das Flores, 123 - Centro" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-3 text-white focus:border-yellow-500 outline-none transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-400 mb-2"><i class="fa-solid fa-clock text-yellow-500 mr-1"></i> Horário de Funcionamento (exibido no cardápio)</label>
+                            <input type="text" id="cfg-horario" placeholder="Ex: Seg a Sex: 18h–23h | Sáb e Dom: 17h–00h" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-3 text-white focus:border-yellow-500 outline-none transition">
+                        </div>
+                    </div>
                     
                     <div class="pt-4 border-t border-zinc-800">
                         <label class="block text-sm font-medium text-yellow-500 mb-2 font-bold"><i class="fa-brands fa-pix"></i> Chave Pix (Para receber pagamentos)</label>
@@ -206,6 +217,85 @@
                         <div id="lista-taxas-config" class="space-y-2 max-h-60 overflow-y-auto pr-2">
                             <div class="text-zinc-500 text-xs italic text-center py-2">Carregando taxas...</div>
                         </div>
+                    </div>
+
+                    <!-- PERSONALIZAÇÃO DE CORES -->
+                    <div class="pt-6 border-t border-zinc-800">
+                        <label class="block text-sm font-medium text-zinc-400 mb-1 flex items-center gap-2">
+                            <i class="fa-solid fa-palette text-yellow-500"></i> Cor de Destaque do Cardápio
+                        </label>
+                        <p class="text-xs text-zinc-500 mb-4">Escolha a cor dos botões, preços e destaques que aparece no cardápio para os clientes.</p>
+                        
+                        <!-- Paleta de cores predefinidas -->
+                        <div class="flex flex-wrap gap-3 mb-4" id="paleta-cores">
+                            <button type="button" onclick="selecionarCor('#eab308')" data-cor="#eab308" class="cor-btn w-10 h-10 rounded-xl border-2 border-transparent hover:scale-110 transition-all shadow-lg" style="background:#eab308" title="Amarelo (padrão)"></button>
+                            <button type="button" onclick="selecionarCor('#ef4444')" data-cor="#ef4444" class="cor-btn w-10 h-10 rounded-xl border-2 border-transparent hover:scale-110 transition-all shadow-lg" style="background:#ef4444" title="Vermelho"></button>
+                            <button type="button" onclick="selecionarCor('#f97316')" data-cor="#f97316" class="cor-btn w-10 h-10 rounded-xl border-2 border-transparent hover:scale-110 transition-all shadow-lg" style="background:#f97316" title="Laranja"></button>
+                            <button type="button" onclick="selecionarCor('#22c55e')" data-cor="#22c55e" class="cor-btn w-10 h-10 rounded-xl border-2 border-transparent hover:scale-110 transition-all shadow-lg" style="background:#22c55e" title="Verde"></button>
+                            <button type="button" onclick="selecionarCor('#3b82f6')" data-cor="#3b82f6" class="cor-btn w-10 h-10 rounded-xl border-2 border-transparent hover:scale-110 transition-all shadow-lg" style="background:#3b82f6" title="Azul"></button>
+                            <button type="button" onclick="selecionarCor('#8b5cf6')" data-cor="#8b5cf6" class="cor-btn w-10 h-10 rounded-xl border-2 border-transparent hover:scale-110 transition-all shadow-lg" style="background:#8b5cf6" title="Roxo"></button>
+                            <button type="button" onclick="selecionarCor('#ec4899')" data-cor="#ec4899" class="cor-btn w-10 h-10 rounded-xl border-2 border-transparent hover:scale-110 transition-all shadow-lg" style="background:#ec4899" title="Rosa"></button>
+                            <button type="button" onclick="selecionarCor('#14b8a6')" data-cor="#14b8a6" class="cor-btn w-10 h-10 rounded-xl border-2 border-transparent hover:scale-110 transition-all shadow-lg" style="background:#14b8a6" title="Teal"></button>
+                            <button type="button" onclick="selecionarCor('#f43f5e')" data-cor="#f43f5e" class="cor-btn w-10 h-10 rounded-xl border-2 border-transparent hover:scale-110 transition-all shadow-lg" style="background:#f43f5e" title="Rosa Vivo"></button>
+                            <button type="button" onclick="selecionarCor('#ffffff')" data-cor="#ffffff" class="cor-btn w-10 h-10 rounded-xl border-2 border-zinc-600 hover:scale-110 transition-all shadow-lg" style="background:#ffffff" title="Branco"></button>
+                            <!-- Cor personalizada -->
+                            <div class="relative w-10 h-10" title="Cor personalizada">
+                                <input type="color" id="cfg-cor-custom" onchange="selecionarCor(this.value)" class="opacity-0 absolute inset-0 w-full h-full cursor-pointer rounded-xl">
+                                <div class="w-10 h-10 rounded-xl border-2 border-dashed border-zinc-600 flex items-center justify-center bg-zinc-800 hover:bg-zinc-700 transition pointer-events-none">
+                                    <i class="fa-solid fa-plus text-zinc-400 text-xs"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preview da cor selecionada -->
+                        <div class="flex items-center gap-3 bg-zinc-950 rounded-lg p-3 border border-zinc-800">
+                            <div id="preview-cor-circulo" class="w-8 h-8 rounded-full flex-shrink-0" style="background:#eab308"></div>
+                            <div class="flex-1">
+                                <div class="text-xs text-zinc-500 uppercase font-bold">Cor Selecionada</div>
+                                <div id="preview-cor-hex" class="text-white font-mono text-sm">#eab308</div>
+                            </div>
+                            <div id="preview-cor-btn" class="px-4 py-2 rounded-lg text-sm font-bold text-black" style="background:#eab308">Botão</div>
+                        </div>
+                        <input type="hidden" id="cfg-cor-destaque" value="#eab308">
+                    </div>
+
+                    <!-- AVISO NO CARDÁPIO -->
+                    <div class="pt-6 border-t border-zinc-800">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-sm font-medium text-zinc-400 flex items-center gap-2">
+                                <i class="fa-solid fa-triangle-exclamation text-yellow-500"></i> Aviso para os Clientes
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <span class="text-xs text-zinc-500">Exibir aviso</span>
+                                <input type="checkbox" id="cfg-aviso-ativo" class="w-4 h-4 accent-yellow-500 cursor-pointer" onchange="togglePreviewAviso()">
+                            </label>
+                        </div>
+                        <p class="text-xs text-zinc-500 mb-3">Aparece em destaque no topo do cardápio. Use para avisar promoções, demoras, feriados, etc.</p>
+                        
+                        <!-- Tipo do aviso -->
+                        <div class="grid grid-cols-3 gap-2 mb-3">
+                            <button type="button" onclick="setTipoAviso('info')" id="tipo-aviso-info" class="tipo-aviso-btn px-2 py-2 rounded-lg text-xs font-bold border border-blue-700 bg-blue-900/30 text-blue-400 transition">
+                                <i class="fa-solid fa-circle-info mr-1"></i> Info
+                            </button>
+                            <button type="button" onclick="setTipoAviso('aviso')" id="tipo-aviso-aviso" class="tipo-aviso-btn px-2 py-2 rounded-lg text-xs font-bold border border-zinc-700 bg-zinc-800/30 text-zinc-400 transition">
+                                <i class="fa-solid fa-triangle-exclamation mr-1"></i> Aviso
+                            </button>
+                            <button type="button" onclick="setTipoAviso('promo')" id="tipo-aviso-promo" class="tipo-aviso-btn px-2 py-2 rounded-lg text-xs font-bold border border-zinc-700 bg-zinc-800/30 text-zinc-400 transition">
+                                <i class="fa-solid fa-tag mr-1"></i> Promoção
+                            </button>
+                        </div>
+                        <input type="hidden" id="cfg-aviso-tipo" value="info">
+
+                        <textarea id="cfg-aviso-texto" rows="3" placeholder="Ex: Hoje estamos com 20% de desconto em pizzas! 🍕&#10;Ex: Tempo de espera aproximado: 40 minutos.&#10;Ex: Aceitamos apenas Pix e dinheiro hoje." class="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-3 text-white focus:border-yellow-500 outline-none transition text-sm resize-none" oninput="togglePreviewAviso()"></textarea>
+                        
+                        <!-- Preview do aviso -->
+                        <div id="preview-aviso" class="hidden mt-3 rounded-lg p-3 border-l-4 text-sm">
+                            <div class="flex items-start gap-2">
+                                <i id="preview-aviso-icon" class="fa-solid fa-circle-info mt-0.5 flex-shrink-0"></i>
+                                <span id="preview-aviso-texto">Texto do aviso...</span>
+                            </div>
+                        </div>
+                        <p class="text-xs text-zinc-600 mt-2">* Preview de como vai aparecer no cardápio.</p>
                     </div>
 
                     <div class="pt-6 border-t border-zinc-800 flex justify-end">
@@ -446,15 +536,27 @@
             if (tab === 'config') carregarTaxas();
         }
 
+        // Converte uma data local (YYYY-MM-DD) para o range UTC correto,
+        // respeitando o fuso do navegador. Assim 00:00 e 23:59 do cliente
+        // são exatamente meia-noite a meia-noite local — não adiantam ou atrasam.
+        function dataLocalParaRangeUTC(dateStr) {
+            // Cria os instantes de início e fim no fuso local do dispositivo
+            const inicio = new Date(`${dateStr}T00:00:00`);     // meia-noite local
+            const fim    = new Date(`${dateStr}T23:59:59.999`); // 23h59 local
+            return {
+                startISO: inicio.toISOString(),
+                endISO:   fim.toISOString()
+            };
+        }
+
         async function carregarHistorico() {
             const dateInput = document.getElementById('hist-date').value;
             if (!dateInput) return;
             const tbody = document.getElementById('lista-historico');
             tbody.innerHTML = '<tr><td colspan="6" class="p-6 text-center text-zinc-500 animate-pulse">Carregando histórico...</td></tr>';
-            const startDate = `${dateInput}T00:00:00`;
-            const endDate = `${dateInput}T23:59:59`;
+            const { startISO, endISO } = dataLocalParaRangeUTC(dateInput);
             try {
-                const { data, error } = await client.from('pedidos').select('*').eq('restaurante_slug', LOJA_SLUG).eq('status', 'concluido').gte('created_at', startDate).lte('created_at', endDate).order('created_at', { ascending: false });
+                const { data, error } = await client.from('pedidos').select('*').eq('restaurante_slug', LOJA_SLUG).eq('status', 'concluido').gte('created_at', startISO).lte('created_at', endISO).order('created_at', { ascending: false });
                 if (error) throw error;
                 const pedidos = data || [];
                 const total = pedidos.reduce((acc, p) => acc + (parseFloat(p.total) || 0), 0);
@@ -571,8 +673,11 @@
 
         async function carregarFaturamentoDiario() {
             try {
-                const hoje = new Date().toISOString().split('T')[0];
-                const { data } = await client.from('pedidos').select('total').eq('restaurante_slug', LOJA_SLUG).gte('created_at', `${hoje}T00:00:00`);
+                const hoje = new Date();
+                const pad = n => String(n).padStart(2,'0');
+                const hojeStr = `${hoje.getFullYear()}-${pad(hoje.getMonth()+1)}-${pad(hoje.getDate())}`;
+                const { startISO, endISO } = dataLocalParaRangeUTC(hojeStr);
+                const { data } = await client.from('pedidos').select('total').eq('restaurante_slug', LOJA_SLUG).gte('created_at', startISO).lte('created_at', endISO);
                 const total = (data || []).reduce((acc, item) => acc + (parseFloat(item.total) || 0), 0);
                 document.getElementById('valor-faturamento-dia').innerText = `R$ ${total.toFixed(2)}`;
             } catch (e) {}
@@ -860,7 +965,35 @@
             window.open(`https://api.whatsapp.com/send?phone=55${fone}&text=${msg}`, '_blank');
         }
 
-        async function mudarStatusPedido(id, novoStatus) { await client.from('pedidos').update({ status: novoStatus }).eq('id', id).eq('restaurante_slug', LOJA_SLUG); carregarPedidos(); }
+        async function mudarStatusPedido(id, novoStatus) { 
+            // Busca o pedido antes de atualizar para ter os dados do cliente
+            let pedidoAtual = null;
+            try {
+                const { data } = await client.from('pedidos').select('*').eq('id', id).eq('restaurante_slug', LOJA_SLUG).single();
+                pedidoAtual = data;
+            } catch(e) {}
+
+            await client.from('pedidos').update({ status: novoStatus }).eq('id', id).eq('restaurante_slug', LOJA_SLUG); 
+            carregarPedidos(); 
+
+            // Ao iniciar o preparo, notifica o cliente via WhatsApp
+            if (novoStatus === 'preparando' && pedidoAtual && pedidoAtual.telefone) {
+                const fone = pedidoAtual.telefone.replace(/\D/g, '');
+                if (fone) {
+                    const tipoTexto = pedidoAtual.tipo_entrega === 'mesa' 
+                        ? `Mesa ${pedidoAtual.mesa}` 
+                        : pedidoAtual.tipo_entrega === 'retirada' 
+                            ? 'para retirada no balcão' 
+                            : 'para entrega';
+                    const msg = window.encodeURIComponent(
+                        `Olá *${pedidoAtual.cliente}*! 👨‍🍳🔥\n\n` +
+                        `Seu pedido *${tipoTexto}* está sendo preparado agora!\n\n` +
+                        `Em breve estará prontinho pra você. Obrigado pela preferência! 😊`
+                    );
+                    window.open(`https://api.whatsapp.com/send?phone=55${fone}&text=${msg}`, '_blank');
+                }
+            }
+        }
         async function marcarComoPago(id) { await client.from('pedidos').update({ status_pagamento: 'pago' }).eq('id', id).eq('restaurante_slug', LOJA_SLUG); carregarPedidos(); }
         async function concluirPedidoGeral(id) { if(!confirm('Deseja realmente finalizar e arquivar este pedido?')) return; await client.from('pedidos').update({ status: 'concluido' }).eq('id', id).eq('restaurante_slug', LOJA_SLUG); carregarPedidos(); carregarFaturamentoDiario(); if(document.getElementById('tab-historico').classList.contains('active')) { carregarHistorico(); } }
 
@@ -1060,24 +1193,99 @@
                 document.getElementById('cfg-nome').value = data.nome; 
                 document.getElementById('cfg-aberto').checked = data.aberto; 
                 document.getElementById('cfg-pix-key').value = data.chave_pix || '';
+                document.getElementById('cfg-endereco').value = data.endereco || '';
+                document.getElementById('cfg-horario').value = data.horario_funcionamento || '';
+
+                // Cor de destaque
+                const cor = data.cor_destaque || '#eab308';
+                selecionarCor(cor, false);
+
+                // Aviso
+                document.getElementById('cfg-aviso-ativo').checked = data.aviso_ativo || false;
+                document.getElementById('cfg-aviso-texto').value = data.aviso_texto || '';
+                setTipoAviso(data.aviso_tipo || 'info', false);
+                togglePreviewAviso();
+
                 CHAVE_PIX_LOJA = data.chave_pix || '';
             }
+        }
+
+        // ---- Cores ----
+        function selecionarCor(cor, updateInput = true) {
+            document.getElementById('cfg-cor-destaque').value = cor;
+            document.getElementById('preview-cor-circulo').style.background = cor;
+            document.getElementById('preview-cor-hex').innerText = cor;
+            document.getElementById('preview-cor-btn').style.background = cor;
+            const textColor = isCorClara(cor) ? '#000' : '#fff';
+            document.getElementById('preview-cor-btn').style.color = textColor;
+            if (updateInput) document.getElementById('cfg-cor-custom').value = cor;
+            // Atualiza borda das bolinhas
+            document.querySelectorAll('.cor-btn').forEach(btn => {
+                btn.style.border = btn.getAttribute('data-cor') === cor ? '2.5px solid #fff' : '2px solid transparent';
+            });
+        }
+
+        function isCorClara(hex) {
+            const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+            return (r*299 + g*587 + b*114) / 1000 > 128;
+        }
+
+        // ---- Aviso ----
+        const AVISO_ESTILOS = {
+            info:  { border:'border-blue-500',  bg:'bg-blue-950/60',  text:'text-blue-200',  icon:'fa-circle-info text-blue-400' },
+            aviso: { border:'border-yellow-500', bg:'bg-yellow-950/60',text:'text-yellow-200',icon:'fa-triangle-exclamation text-yellow-400' },
+            promo: { border:'border-green-500',  bg:'bg-green-950/60', text:'text-green-200', icon:'fa-tag text-green-400' }
+        };
+
+        function setTipoAviso(tipo, updateBtn = true) {
+            document.getElementById('cfg-aviso-tipo').value = tipo;
+            if (updateBtn) {
+                ['info','aviso','promo'].forEach(t => {
+                    const btn = document.getElementById('tipo-aviso-' + t);
+                    const est = AVISO_ESTILOS[t];
+                    btn.className = t === tipo
+                        ? `tipo-aviso-btn px-2 py-2 rounded-lg text-xs font-bold border ${est.border} ${est.bg} ${est.text} transition`
+                        : 'tipo-aviso-btn px-2 py-2 rounded-lg text-xs font-bold border border-zinc-700 bg-zinc-800/30 text-zinc-400 transition';
+                });
+            }
+            togglePreviewAviso();
+        }
+
+        function togglePreviewAviso() {
+            const ativo = document.getElementById('cfg-aviso-ativo').checked;
+            const texto = document.getElementById('cfg-aviso-texto').value.trim();
+            const tipo  = document.getElementById('cfg-aviso-tipo').value || 'info';
+            const prev  = document.getElementById('preview-aviso');
+            if (!ativo || !texto) { prev.classList.add('hidden'); return; }
+            const est = AVISO_ESTILOS[tipo];
+            prev.className = `mt-3 rounded-lg p-3 border-l-4 text-sm ${est.bg} ${est.border}`;
+            prev.classList.remove('hidden');
+            document.getElementById('preview-aviso-icon').className = `fa-solid ${est.icon} mt-0.5 flex-shrink-0`;
+            document.getElementById('preview-aviso-texto').className = est.text;
+            document.getElementById('preview-aviso-texto').innerText = texto;
         }
         
         async function salvarConfig() {
             const btn = document.getElementById('btn-save-config');
-            btn.innerHTML = 'Salvando...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Salvando...';
             const updates = { 
                 nome: document.getElementById('cfg-nome').value, 
                 aberto: document.getElementById('cfg-aberto').checked,
-                chave_pix: document.getElementById('cfg-pix-key').value 
+                chave_pix: document.getElementById('cfg-pix-key').value,
+                endereco: document.getElementById('cfg-endereco').value,
+                horario_funcionamento: document.getElementById('cfg-horario').value,
+                cor_destaque: document.getElementById('cfg-cor-destaque').value || '#eab308',
+                aviso_ativo: document.getElementById('cfg-aviso-ativo').checked,
+                aviso_texto: document.getElementById('cfg-aviso-texto').value,
+                aviso_tipo: document.getElementById('cfg-aviso-tipo').value || 'info'
             };
             const logo = document.getElementById('cfg-logo-file').files[0];
             const banner = document.getElementById('cfg-banner-file').files[0];
             if (logo) { const n = `logo_${Date.now()}`; await client.storage.from('logos').upload(n, logo); updates.logo_url = client.storage.from('logos').getPublicUrl(n).data.publicUrl; }
             if (banner) { const n = `banner_${Date.now()}`; await client.storage.from('logos').upload(n, banner); updates.banner_url = client.storage.from('logos').getPublicUrl(n).data.publicUrl; }
             await client.from('restaurantes').update(updates).eq('slug', LOJA_SLUG);
-            alert('Salvo!'); location.reload();
+            btn.innerHTML = '<i class="fa-solid fa-check mr-2"></i>Salvo!';
+            setTimeout(() => location.reload(), 800);
         }
 
         async function carregarTaxas() {
