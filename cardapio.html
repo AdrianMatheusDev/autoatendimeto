@@ -135,8 +135,14 @@
     <!-- Produtos -->
     <main id="products-container" class="p-4 space-y-8 min-h-[50vh]"></main>
 
+    <!-- Botão Histórico de Pedidos -->
+    <button id="btn-historico" onclick="abrirHistoricoPedidos()" class="fixed bottom-28 sm:bottom-40 right-4 bg-blue-900 border border-blue-700 text-white p-3 rounded-full shadow-xl hover:bg-blue-800 transition z-40 flex flex-col items-center">
+        <i class="fa-solid fa-history text-xl"></i>
+        <span class="text-[8px] font-bold uppercase mt-1">Histórico</span>
+    </button>
+
     <!-- Botão Pedir Conta (apenas mesa) -->
-    <button id="btn-pedido-conta" onclick="pedirAConta()" class="fixed bottom-24 right-4 bg-gray-800 border border-gray-700 text-white p-3 rounded-full shadow-xl hover:bg-gray-700 transition z-40 flex flex-col items-center hidden">
+    <button id="btn-pedido-conta" onclick="pedirAConta()" class="fixed bottom-16 sm:bottom-24 right-4 bg-gray-800 border border-gray-700 text-white p-3 rounded-full shadow-xl hover:bg-gray-700 transition z-40 flex flex-col items-center hidden">
         <i class="fa-solid fa-receipt text-xl"></i>
         <span class="text-[8px] font-bold uppercase mt-1">Conta</span>
     </button>
@@ -205,6 +211,39 @@
                         <span>Adicionar</span> <i class="fa-solid fa-cart-plus"></i>
                     </button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Histórico de Pedidos -->
+    <div id="modal-historico" class="fixed inset-0 z-[60] bg-black/90 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-zinc-900 w-full max-w-md h-auto max-h-[90vh] rounded-t-2xl sm:rounded-2xl flex flex-col overflow-hidden border border-zinc-800 shadow-2xl">
+            <div class="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-950 shrink-0">
+                <h2 class="text-lg font-bold text-white">Seus Pedidos</h2>
+                <button onclick="fecharHistoricoPedidos()" class="text-gray-400 hover:text-white"><i class="fa-solid fa-times text-xl"></i></button>
+            </div>
+            <!-- Input de Telefone (mostrado primeiro se não estiver salvo) -->
+            <div id="historico-input-tel" class="hidden flex-1 flex flex-col items-center justify-center p-6 space-y-4">
+                <i class="fa-solid fa-phone text-4xl text-yellow-500 opacity-70"></i>
+                <h3 class="text-white font-bold text-center">Qual é seu telefone?</h3>
+                <p class="text-xs text-zinc-400 text-center">Usaremos para rastrear seus pedidos neste dispositivo</p>
+                <div class="w-full space-y-3">
+                    <input type="tel" id="hist-tel-input" class="w-full bg-zinc-800 border border-zinc-700 rounded p-3 text-white outline-none focus:border-yellow-500 text-sm" placeholder="(00) 00000-0000" oninput="mascaraTelefone(this)">
+                    <button onclick="salvarTelefoneHistorico()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-3 rounded-lg transition active:scale-95">Confirmar</button>
+                </div>
+            </div>
+            <!-- Lista de Pedidos -->
+            <div id="historico-lista" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                <div class="text-center text-zinc-500 py-10 animate-pulse">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-3"></i>
+                    <p class="text-sm">Carregando histórico...</p>
+                </div>
+            </div>
+            <!-- Botão Trocar Telefone (rodapé) -->
+            <div id="historico-footer" class="hidden p-3 border-t border-zinc-800 bg-zinc-950">
+                <button onclick="limparTelefoneHistorico()" class="w-full text-xs text-zinc-400 hover:text-white transition py-2 flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-repeat"></i> Usar outro número
+                </button>
             </div>
         </div>
     </div>
@@ -1156,9 +1195,129 @@
 
         function carregarDadosLocais() {
             if (localStorage.getItem('rest_nome')) document.getElementById('input-nome').value = localStorage.getItem('rest_nome');
-            if (localStorage.getItem('rest_tel')) document.getElementById('input-tel').value = localStorage.getItem('rest_tel');
+            // Usa telefone do histórico se existir, senão usa do checkout
+            const telHistorico = localStorage.getItem('rest_tel_historico');
+            const telCheckout = localStorage.getItem('rest_tel');
+            const telefoneFinal = telHistorico || telCheckout;
+            if (telefoneFinal) document.getElementById('input-tel').value = telefoneFinal;
+            if (localStorage.getItem('rest_mesa')) document.getElementById('input-mesa').value = localStorage.getItem('rest_mesa');
+        }
+
+        // ---- Histórico de Pedidos ----
+        async function abrirHistoricoPedidos() {
+            document.getElementById('modal-historico').classList.remove('hidden');
+            const telefone = localStorage.getItem('rest_tel_historico');
+            
+            if (!telefone) {
+                // Mostra input de telefone
+                document.getElementById('historico-input-tel').classList.remove('hidden');
+                document.getElementById('historico-lista').classList.add('hidden');
+                document.getElementById('historico-footer').classList.add('hidden');
+                document.getElementById('hist-tel-input').focus();
+            } else {
+                // Carrega histórico com telefone já salvo
+                document.getElementById('historico-input-tel').classList.add('hidden');
+                document.getElementById('historico-lista').classList.remove('hidden');
+                document.getElementById('historico-footer').classList.remove('hidden');
+                await carregarHistoricoPedidos(telefone);
+            }
+        }
+
+        function fecharHistoricoPedidos() {
+            document.getElementById('modal-historico').classList.add('hidden');
+        }
+
+        function salvarTelefoneHistorico() {
+            const telefone = document.getElementById('hist-tel-input').value.trim();
+            if (!telefone || telefone.length < 10) {
+                toast('Informe um telefone válido.', 'err');
+                return;
+            }
+            localStorage.setItem('rest_tel_historico', telefone);
+            localStorage.setItem('rest_tel', telefone);
+            toast('Telefone salvo com sucesso!', 'ok');
+            
+            // Muda para tela de carregamento
+            document.getElementById('historico-input-tel').classList.add('hidden');
+            document.getElementById('historico-lista').classList.remove('hidden');
+            document.getElementById('historico-footer').classList.remove('hidden');
+            carregarHistoricoPedidos(telefone);
+        }
+
+        function limparTelefoneHistorico() {
+            if (!confirm('Deseja usar outro número? O histórico será atualizado.')) return;
+            localStorage.removeItem('rest_tel_historico');
+            document.getElementById('hist-tel-input').value = '';
+            document.getElementById('historico-input-tel').classList.remove('hidden');
+            document.getElementById('historico-lista').classList.add('hidden');
+            document.getElementById('historico-footer').classList.add('hidden');
+            document.getElementById('hist-tel-input').focus();
+        }
+
+        async function carregarHistoricoPedidos(telefone) {
+            const lista = document.getElementById('historico-lista');
+            lista.innerHTML = '<div class="text-center text-zinc-500 py-10 animate-pulse"><i class="fa-solid fa-spinner fa-spin text-2xl mb-3"></i><p class="text-sm">Carregando...</p></div>';
+            
+            try {
+                const { data, error } = await client.from('pedidos')
+                    .select('*')
+                    .eq('restaurante_slug', LOJA_SLUG)
+                    .eq('telefone', telefone)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                if (!data || data.length === 0) {
+                    lista.innerHTML = '<div class="text-center text-zinc-400 py-10"><i class="fa-solid fa-inbox text-3xl mb-3 opacity-50"></i><p class="text-sm">Nenhum pedido encontrado</p></div>';
+                    return;
+                }
+                
+                lista.innerHTML = data.map(pedido => {
+                    const dataFormatada = new Date(pedido.created_at).toLocaleDateString('pt-BR');
+                    const horaFormatada = new Date(pedido.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+                    const itens = JSON.parse(pedido.itens || '[]');
+                    const statusCores = {
+                        'pendente': { bg: 'bg-yellow-900/30', text: 'text-yellow-400', label: '⏳ Pendente' },
+                        'preparando': { bg: 'bg-blue-900/30', text: 'text-blue-400', label: '👨‍🍳 Preparando' },
+                        'pronto': { bg: 'bg-green-900/30', text: 'text-green-400', label: '✅ Pronto' },
+                        'concluido': { bg: 'bg-gray-900/30', text: 'text-gray-400', label: '🏁 Concluído' },
+                        'visto': { bg: 'bg-purple-900/30', text: 'text-purple-400', label: '👀 Visto' },
+                        'aguardando_pagamento': { bg: 'bg-orange-900/30', text: 'text-orange-400', label: '💳 Aguardando Pagamento' }
+                    };
+                    const statusConfig = statusCores[pedido.status] || statusCores.pendente;
+                    
+                    return `
+                        <div class="bg-zinc-800 border border-zinc-700 rounded-lg p-3 space-y-2 hover:border-zinc-600 transition">
+                            <div class="flex justify-between items-start gap-2">
+                                <div>
+                                    <p class="text-xs text-zinc-400">Pedido #${pedido.id.slice(0, 8).toUpperCase()}</p>
+                                    <p class="text-xs text-zinc-500 mt-0.5">${dataFormatada} às ${horaFormatada}</p>
+                                </div>
+                                <span class="${statusConfig.bg} ${statusConfig.text} text-xs font-bold px-2 py-1 rounded whitespace-nowrap">${statusConfig.label}</span>
+                            </div>
+                            <div class="text-sm text-zinc-300 space-y-1">
+                                ${itens.slice(0, 2).map(item => `<p>• ${item.nome}</p>`).join('')}
+                                ${itens.length > 2 ? `<p class="text-xs text-zinc-500">+ ${itens.length - 2} item(ns)</p>` : ''}
+                            </div>
+                            <div class="flex justify-between items-center pt-2 border-t border-zinc-700">
+                                <span class="text-yellow-500 font-bold text-sm">R$ ${parseFloat(pedido.total || 0).toFixed(2)}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+            } catch (e) {
+                lista.innerHTML = `<div class="text-center text-red-400 py-10"><i class="fa-solid fa-circle-exclamation text-2xl mb-3"></i><p class="text-sm">Erro ao carregar: ${e.message}</p></div>`;
+            }
+        }
+
+        function carregarDadosLocais() {
+            if (localStorage.getItem('rest_nome')) document.getElementById('input-nome').value = localStorage.getItem('rest_nome');
+            // Usa telefone do histórico se existir, senão usa do checkout
+            const telHistorico = localStorage.getItem('rest_tel_historico');
+            const telCheckout = localStorage.getItem('rest_tel');
+            const telefoneFinal = telHistorico || telCheckout;
+            if (telefoneFinal) document.getElementById('input-tel').value = telefoneFinal;
             if (localStorage.getItem('rest_mesa')) document.getElementById('input-mesa').value = localStorage.getItem('rest_mesa');
         }
     </script>
-</body>
-</html>
