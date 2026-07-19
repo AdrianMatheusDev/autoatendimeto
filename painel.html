@@ -203,6 +203,17 @@
                             <label class="block text-sm font-medium text-zinc-400 mb-2">Banner de Fundo (Upload p/ Supabase)</label>
                             <input type="file" id="cfg-banner-file" accept="image/*" class="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-zinc-800 file:text-yellow-500 hover:file:bg-zinc-700 cursor-pointer transition">
                         </div>
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-400 mb-2">WhatsApp da Empresa</label>
+                            <input type="tel" id="cfg-whatsapp" placeholder="Ex: 5514998889412" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-3 text-white focus:border-yellow-500 outline-none transition">
+                            <p class="text-xs text-zinc-500 mt-1">Esse número aparecerá no botão de contato do cardápio.</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-400 mb-2">Imagens do Carrossel (promoções)</label>
+                            <input type="file" id="cfg-slides-files" multiple accept="image/*" class="block w-full text-sm text-zinc-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-zinc-800 file:text-yellow-500 hover:file:bg-zinc-700 cursor-pointer transition">
+                            <textarea id="cfg-slides-text" rows="4" placeholder="Cole uma URL por linha ou separadas por vírgula" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg p-3 text-white focus:border-yellow-500 outline-none transition text-sm mt-2 resize-none"></textarea>
+                            <p class="text-xs text-zinc-500 mt-1">As imagens serão exibidas em slide no topo do cardápio para o cliente.</p>
+                        </div>
                     </div>
 
                     <div class="pt-6 border-t border-zinc-800">
@@ -763,8 +774,8 @@
                 let btnWhatsApp = '';
                 if (p.tipo_entrega === 'delivery') {
                     btnWhatsApp = `
-                        <button onclick='enviarMensagemEntrega(${JSON.stringify(p)}, ${totalFromItems})' class="col-span-2 bg-yellow-600 hover:bg-yellow-500 text-white py-2 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2 mt-1">
-                            <i class="fa-brands fa-whatsapp"></i> SAIU PRA ENTREGA
+                        <button onclick='enviarMensagemEntrega(${JSON.stringify(p)}, ${totalFromItems})' class="col-span-1 bg-yellow-600 hover:bg-yellow-500 text-white py-2 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2 mt-1">
+                            <i class="fa-brands fa-whatsapp"></i> Entrega
                         </button>
                     `;
                 } else if (p.tipo_entrega === 'mesa') {
@@ -781,7 +792,10 @@
                     `;
                 }
                 
-                let btnCobranca = '';
+                    // botão de rotas (placeholder) — definido para evitar ReferenceError
+                    let btnRotas = '';
+
+                    let btnCobranca = '';
                 if (!isPago && p.telefone) {
                     // passa o total recalculado no onclick para garantir valor correto
                     btnCobranca = `
@@ -796,8 +810,20 @@
                     <div>
                         ${p.chamado_conta ? `<div class="bg-red-500 text-white text-center font-bold p-2 mb-3 animate-pulse rounded text-xs shadow-lg uppercase tracking-wider"><i class="fa-solid fa-bell"></i> Cliente Pedindo a Conta</div>` : ''}
                         <div class="flex justify-between items-start mb-4 pb-3 border-b border-zinc-800">
-                            <div><h3 class="font-bold text-xl text-white flex items-center gap-2">${p.tipo_entrega === 'mesa' ? '<i class="fa-solid fa-chair text-zinc-500"></i> Mesa ' + p.mesa : p.tipo_entrega === 'retirada' ? '<i class="fa-solid fa-bag-shopping text-purple-500"></i> Retirada' : '<i class="fa-solid fa-motorcycle text-zinc-500"></i> Delivery'}</h3><p class="text-sm text-zinc-400 mt-1 font-medium">${p.cliente}</p></div>
-                            <span class="text-xs bg-zinc-800 px-2 py-1 rounded text-zinc-500 font-mono border border-zinc-700">${new Date(p.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                            <div>
+                                <h3 class="font-bold text-xl text-white flex items-center gap-2">${p.tipo_entrega === 'mesa' ? '<i class="fa-solid fa-chair text-zinc-500"></i> Mesa ' + p.mesa : p.tipo_entrega === 'retirada' ? '<i class="fa-solid fa-bag-shopping text-purple-500"></i> Retirada' : '<i class="fa-solid fa-motorcycle text-zinc-500"></i> Delivery'}</h3>
+                                <p class="text-sm text-zinc-400 mt-1 font-medium">${p.cliente}</p>
+                            </div>
+                            <div class="flex flex-col items-end gap-1">
+                                <span class="text-xs bg-zinc-800 px-2 py-1 rounded text-zinc-500 font-mono border border-zinc-700">${new Date(p.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                ${(p.status !== 'visto' && !isPreparando) ? `
+                                <button onclick="marcarComoVisto('${p.id}')" class="text-xs bg-purple-900 hover:bg-purple-800 text-white px-3 py-1 rounded transition border border-purple-700">
+                                    <i class="fa-solid fa-eye-slash mr-1"></i> Visto
+                                </button>
+                                ` : (p.status === 'visto' ? `
+                                <div class="text-xs bg-zinc-800 text-zinc-300 px-3 py-1 rounded border border-purple-700 flex items-center gap-2"><i class="fa-solid fa-eye"></i> Visto</div>
+                                ` : '')}
+                            </div>
                         </div>
                         <div class="mb-4"><span class="text-[10px] uppercase font-bold text-zinc-500">Status:</span> <span class="text-[10px] uppercase font-bold ${isPreparando ? 'text-yellow-500' : 'text-blue-500'}">${p.status}</span></div>
                         <ul class="mb-4 space-y-1">${listaItens}</ul>
@@ -807,17 +833,19 @@
 
                         <div class="flex justify-between items-center bg-zinc-950 p-2 rounded border border-zinc-800 mb-4"><div class="flex flex-col"><span class="text-xs text-zinc-500 uppercase font-bold">Total</span><span class="text-lg font-bold text-green-400 font-mono">R$ ${totalPedido}</span></div>${badgePagamento}</div>
                     </div>
-                    <div class="grid grid-cols-2 gap-2 mt-auto">
-                        <button onclick="mudarStatusPedido('${p.id}', 'preparando')" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white text-xs py-2 rounded-lg transition ${isPreparando ? 'opacity-50 cursor-default border border-yellow-500/50' : ''}" ${isPreparando ? 'disabled' : ''}>${isPreparando ? '<i class="fa-solid fa-fire"></i> Preparando' : 'Iniciar Preparo'}</button>
-                        <button onclick="marcarComoPago('${p.id}')" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white text-xs py-2 rounded-lg transition ${isPago ? 'opacity-50 cursor-default border border-green-500/50' : ''}" ${isPago ? 'disabled' : ''}>${isPago ? '<i class="fa-solid fa-check"></i> Pago' : 'Marcar Pago'}</button>
-                        
-                        <button onclick='imprimirComanda(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="col-span-2 bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2 mt-1 text-xs border border-zinc-600">
+                    <div class="flex flex-col gap-2 mt-auto">
+                        <div class="flex gap-2">
+                            <button onclick="mudarStatusPedido('${p.id}', 'preparando')" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white text-xs py-2 rounded-lg transition ${isPreparando ? 'opacity-50 cursor-default border border-yellow-500/50' : ''}" ${isPreparando ? 'disabled' : ''}>${isPreparando ? '<i class="fa-solid fa-fire"></i> Preparando' : 'Iniciar Preparo'}</button>
+                            <button onclick="marcarComoPago('${p.id}')" class="flex-1 bg-zinc-800 hover:bg-zinc-700 text-white text-xs py-2 rounded-lg transition ${isPago ? 'opacity-50 cursor-default border border-green-500/50' : ''}" ${isPago ? 'disabled' : ''}>${isPago ? '<i class="fa-solid fa-check"></i> Pago' : 'Marcar Pago'}</button>
+                        </div>
+
+                        <button onclick='imprimirComanda(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="w-full bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2 text-xs border border-zinc-600">
                             <i class="fa-solid fa-print"></i> IMPRIMIR COMANDA
                         </button>
-                        
-                        ${btnCobranca}
-                        ${btnWhatsApp}
-                        ${isPago ? `<button onclick="concluirPedidoGeral('${p.id}')" class="col-span-2 bg-green-700 hover:bg-green-600 text-white py-2 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2 mt-1"><i class="fa-solid fa-flag-checkered"></i> Finalizar & Concluir</button>` : ''}
+
+                        ${btnWhatsApp ? btnWhatsApp.replace(/col-span-\d+\s*/g, '').replace('class="', 'class="w-full ') : ''}
+
+                        ${isPago ? `<button onclick="concluirPedidoGeral('${p.id}')" class="w-full bg-green-700 hover:bg-green-600 text-white py-2 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2"><i class="fa-solid fa-flag-checkered"></i> Finalizar & Concluir</button>` : ''}
                     </div>
                 </div>`;
             }).join('');
@@ -965,6 +993,7 @@
             window.open(`https://api.whatsapp.com/send?phone=55${fone}&text=${msg}`, '_blank');
         }
 
+
         async function mudarStatusPedido(id, novoStatus) { 
             // Busca o pedido antes de atualizar para ter os dados do cliente
             let pedidoAtual = null;
@@ -995,6 +1024,10 @@
             }
         }
         async function marcarComoPago(id) { await client.from('pedidos').update({ status_pagamento: 'pago' }).eq('id', id).eq('restaurante_slug', LOJA_SLUG); carregarPedidos(); }
+        async function marcarComoVisto(id) { 
+            await client.from('pedidos').update({ status: 'visto' }).eq('id', id).eq('restaurante_slug', LOJA_SLUG); 
+            carregarPedidos(); 
+        }
         async function concluirPedidoGeral(id) { if(!confirm('Deseja realmente finalizar e arquivar este pedido?')) return; await client.from('pedidos').update({ status: 'concluido' }).eq('id', id).eq('restaurante_slug', LOJA_SLUG); carregarPedidos(); carregarFaturamentoDiario(); if(document.getElementById('tab-historico').classList.contains('active')) { carregarHistorico(); } }
 
         function setupRealtime() {
@@ -1195,6 +1228,23 @@
                 document.getElementById('cfg-pix-key').value = data.chave_pix || '';
                 document.getElementById('cfg-endereco').value = data.endereco || '';
                 document.getElementById('cfg-horario').value = data.horario_funcionamento || '';
+                document.getElementById('cfg-whatsapp').value = localStorage.getItem(`atd_telefone_${LOJA_SLUG}`) || data.telefone || '';
+
+                const slidesSalvosRaw = localStorage.getItem(`atd_slides_${LOJA_SLUG}`) || '';
+                if (slidesSalvosRaw) {
+                    try {
+                        const slidesSalvos = JSON.parse(slidesSalvosRaw);
+                        if (Array.isArray(slidesSalvos)) {
+                            document.getElementById('cfg-slides-text').value = slidesSalvos.join('\n');
+                        } else {
+                            document.getElementById('cfg-slides-text').value = slidesSalvosRaw;
+                        }
+                    } catch (e) {
+                        document.getElementById('cfg-slides-text').value = slidesSalvosRaw;
+                    }
+                } else {
+                    document.getElementById('cfg-slides-text').value = '';
+                }
 
                 // Cor de destaque
                 const cor = data.cor_destaque || '#eab308';
@@ -1268,12 +1318,14 @@
         async function salvarConfig() {
             const btn = document.getElementById('btn-save-config');
             btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Salvando...';
+            const whatsapp = document.getElementById('cfg-whatsapp').value.trim();
             const updates = { 
                 nome: document.getElementById('cfg-nome').value, 
                 aberto: document.getElementById('cfg-aberto').checked,
                 chave_pix: document.getElementById('cfg-pix-key').value,
                 endereco: document.getElementById('cfg-endereco').value,
                 horario_funcionamento: document.getElementById('cfg-horario').value,
+                telefone: whatsapp,
                 cor_destaque: document.getElementById('cfg-cor-destaque').value || '#eab308',
                 aviso_ativo: document.getElementById('cfg-aviso-ativo').checked,
                 aviso_texto: document.getElementById('cfg-aviso-texto').value,
@@ -1281,6 +1333,19 @@
             };
             const logo = document.getElementById('cfg-logo-file').files[0];
             const banner = document.getElementById('cfg-banner-file').files[0];
+            const slidesText = document.getElementById('cfg-slides-text').value;
+            const slidesFiles = Array.from(document.getElementById('cfg-slides-files').files || []);
+            const slidesUrls = [];
+            for (const file of slidesFiles) {
+                const fileName = `slide_${Date.now()}_${Math.random().toString(36).slice(2)}_${file.name.replace(/\s+/g, '_')}`;
+                await client.storage.from('logos').upload(fileName, file);
+                const { data: publicData } = client.storage.from('logos').getPublicUrl(fileName);
+                if (publicData?.publicUrl) slidesUrls.push(publicData.publicUrl);
+            }
+            const slidesParsed = (slidesText || '').split(/\n|,/).map(item => item.trim()).filter(Boolean);
+            const slidesFinal = [...slidesUrls, ...slidesParsed];
+            localStorage.setItem(`atd_telefone_${LOJA_SLUG}`, whatsapp);
+            localStorage.setItem(`atd_slides_${LOJA_SLUG}`, JSON.stringify(slidesFinal));
             if (logo) { const n = `logo_${Date.now()}`; await client.storage.from('logos').upload(n, logo); updates.logo_url = client.storage.from('logos').getPublicUrl(n).data.publicUrl; }
             if (banner) { const n = `banner_${Date.now()}`; await client.storage.from('logos').upload(n, banner); updates.banner_url = client.storage.from('logos').getPublicUrl(n).data.publicUrl; }
             await client.from('restaurantes').update(updates).eq('slug', LOJA_SLUG);
