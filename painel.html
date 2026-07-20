@@ -796,7 +796,7 @@
                     let btnRotas = '';
 
                     let btnCobranca = '';
-                if (!isPago && p.telefone) {
+                if (!isPago && p.telefone && p.metodo_pagamento && p.metodo_pagamento.includes('Pix')) {
                     // passa o total recalculado no onclick para garantir valor correto
                     btnCobranca = `
                         <button onclick='enviarCobrancaPix(${JSON.stringify(p)}, ${totalFromItems})' class="col-span-2 bg-teal-700 hover:bg-teal-600 text-white py-2 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2 mt-1 text-xs border border-teal-500">
@@ -842,6 +842,8 @@
                         <button onclick='imprimirComanda(${JSON.stringify(p).replace(/'/g, "&#39;")})' class="w-full bg-zinc-700 hover:bg-zinc-600 text-white py-2 rounded-lg font-bold shadow-lg transition flex items-center justify-center gap-2 text-xs border border-zinc-600">
                             <i class="fa-solid fa-print"></i> IMPRIMIR COMANDA
                         </button>
+
+                        ${btnCobranca ? btnCobranca : ''}
 
                         ${btnWhatsApp ? btnWhatsApp.replace(/col-span-\d+\s*/g, '').replace('class="', 'class="w-full ') : ''}
 
